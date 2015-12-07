@@ -19,6 +19,7 @@ static struct file_operations fops = {
 };
 static int blocked = 0;
 static int passed = 0;
+static rule_t **rule;
 static ssize_t reset(struct device* dev, struct device_attribute* attr, const char* buf, size_t count)
 {
 	blocked=0;
@@ -64,17 +65,17 @@ unsigned int hook_func(unsigned int hooknum, struct sk_buff *skb, const struct n
 	blocked++;                 
   	return NF_DROP;   
   }                  */
-  rule_t **rule = kmalloc(3*sizeof(rule_t*), GFP_ATOMIC);
+  //rule_t **rule = kmalloc(3*sizeof(rule_t*), GFP_ATOMIC);
   if (!rule)
   {
-	  printk(KERN_INFO "first allocation failed\n");
-	return NF_ACCEPT;
+	  printk(KERN_INFO "first allocation empty\n");
+	  return NF_ACCEPT;
 	}
-  rule[0] = kmalloc(sizeof(rule_t), GFP_ATOMIC);
+  //rule[0] = kmalloc(sizeof(rule_t), GFP_ATOMIC);
   if (!rule[0])
    {
-	  printk(KERN_INFO "second allocation failed\n");
-	return NF_ACCEPT;
+	  printk(KERN_INFO "second allocation empty\n");
+	  return NF_ACCEPT;
 	}
   rule[0]->src_ip = htonl(2130706433);
   rule[0]->src_prefix_mask = htonl(4278190080);
@@ -84,14 +85,25 @@ unsigned int hook_func(unsigned int hooknum, struct sk_buff *skb, const struct n
   rule[0]->dst_port = 0;
   rule[0]->protocol = 143;
   rule[0]->action = NF_ACCEPT;
-  int i = check_against_table(&rule, 1, skb);
-  //printk(KERN_DEBUG "%u\n", i);
+  int i = check_against_table(rule, 1, skb);
+  
+  
   return NF_ACCEPT;                                            
 }
 static DEVICE_ATTR(my_att, S_IRWXO , display, reset);
 //Called when module loaded using 'insmod'
 int init_module()
 {
+  rule = kmalloc(3*sizeof(rule_t*), GFP_ATOMIC);
+  if (!rule)
+  {
+	  printk(KERN_INFO "first allocation failed\n");
+	}
+  rule[0] = kmalloc(sizeof(rule_t), GFP_ATOMIC);
+  if (!rule[0])
+   {
+	  printk(KERN_INFO "second allocation failed\n");
+	}
   printk(KERN_DEBUG "init fw\n");
   major_number = register_chrdev(0, "My_Device1", &fops);
   printk(KERN_INFO "major is %u\n", major_number);
@@ -103,13 +115,14 @@ int init_module()
   nfho.pf = PF_INET;                           //IPV4 packets
   nfho.priority = NF_IP_PRI_FIRST;             //set to highest priority over all other hook functions
   nf_register_hook(&nfho);                     //register hook
-
   return 0;                                    //return 0 for success
 }
 
 //Called when module unloaded using 'rmmod'
 void cleanup_module()
 {
+	//kfree(rule[0]);
+  //kfree(rule);
   printk(KERN_DEBUG "cleanup fw\n");
   nf_unregister_hook(&nfho);                     //cleanup – unregister hook
   device_remove_file(my_device, &dev_attr_my_att.attr);

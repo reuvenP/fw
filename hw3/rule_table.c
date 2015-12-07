@@ -88,11 +88,11 @@ int check_against_table(rule_t **rule_table, int size, struct sk_buff *skb)
 	}
 	if ((proto != PROT_ICMP) && (proto != PROT_TCP) && (proto != PROT_UDP))
 		proto = PROT_OTHER;
-	//retval = check_against_rule(rule_table[0], src_add, dst_add, proto, src_prt, dst_prt);
+	retval = check_against_rule(rule_table[0], src_add, dst_add, proto, src_prt, dst_prt);
 	/*print_ip(src_add);
 	print_ip(dst_add);
 	printk(KERN_INFO "%u\n%u\n%u\n\n", proto, src_prt, dst_prt);*/
-	print_ip(rule_table[0]->src_ip);
+	//printk(KERN_INFO "rule src_ip: %u\n", rule_table[0]->src_ip);
 	if (retval == -1)
 		return NF_ACCEPT;
 	return retval;		

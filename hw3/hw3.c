@@ -85,24 +85,96 @@ unsigned int hook_func(unsigned int hooknum, struct sk_buff *skb, const struct n
   rule[0]->dst_port = 0;
   rule[0]->protocol = 143;
   rule[0]->action = NF_ACCEPT;
-  int i = check_against_table(rule, 1, skb);
   
   
-  return NF_ACCEPT;                                            
+  rule[1]->src_ip = 50397194;
+  rule[1]->src_prefix_mask = htonl(4294967295);
+  rule[1]->dst_ip = 0;
+  rule[1]->dst_prefix_mask = 0;
+  rule[1]->src_port = 0;
+  rule[1]->dst_port = 0;
+  rule[1]->protocol = 143;
+  rule[1]->action = NF_ACCEPT;
+  
+  rule[2]->src_ip = 0;
+  rule[2]->src_prefix_mask = 0;
+  rule[2]->dst_ip = 50397194;
+  rule[2]->dst_prefix_mask = htonl(4294967295);
+  rule[2]->src_port = 0;
+  rule[2]->dst_port = 0;
+  rule[2]->protocol = 143;
+  rule[2]->action = NF_ACCEPT;
+  
+  rule[3]->src_ip = 50462730;
+  rule[3]->src_prefix_mask = htonl(4294967295);
+  rule[3]->dst_ip = 0;
+  rule[3]->dst_prefix_mask = 0;
+  rule[3]->src_port = 0;
+  rule[3]->dst_port = 0;
+  rule[3]->protocol = 143;
+  rule[3]->action = NF_ACCEPT;
+  
+  rule[4]->src_ip = 0;
+  rule[4]->src_prefix_mask = 0;
+  rule[4]->dst_ip = 50462730;
+  rule[4]->dst_prefix_mask = htonl(4294967295);
+  rule[4]->src_port = 0;
+  rule[4]->dst_port = 0;
+  rule[4]->protocol = 143;
+  rule[4]->action = NF_ACCEPT;
+  
+  rule[5]->src_ip = 251789322;
+  rule[5]->src_prefix_mask = htonl(4294967295);
+  rule[5]->dst_ip = 0;
+  rule[5]->dst_prefix_mask = 0;
+  rule[5]->src_port = 0;
+  rule[5]->dst_port = 0;
+  rule[5]->protocol = 143;
+  rule[5]->action = NF_ACCEPT;
+  
+  rule[6]->src_ip = 0;
+  rule[6]->src_prefix_mask = 0;
+  rule[6]->dst_ip = 251789322;
+  rule[6]->dst_prefix_mask = htonl(4294967295);
+  rule[6]->src_port = 0;
+  rule[6]->dst_port = 0;
+  rule[6]->protocol = 143;
+  rule[6]->action = NF_ACCEPT;
+  
+  rule[7]->src_ip = 0;
+  rule[7]->src_prefix_mask = 0;
+  rule[7]->dst_ip = 0;
+  rule[7]->dst_prefix_mask = 0;
+  rule[7]->src_port = 0;
+  rule[7]->dst_port = 0;
+  rule[7]->protocol = 143;
+  rule[7]->action = NF_DROP;
+  
+  int i = check_against_table(rule, 8, skb);
+  
+  if (i == NF_ACCEPT)
+	passed++;
+  else if (i == NF_DROP)
+	blocked++;
+  return i;                                            
 }
 static DEVICE_ATTR(my_att, S_IRWXO , display, reset);
 //Called when module loaded using 'insmod'
 int init_module()
 {
-  rule = kmalloc(3*sizeof(rule_t*), GFP_ATOMIC);
+  rule = kmalloc(8*sizeof(rule_t*), GFP_ATOMIC);
   if (!rule)
   {
 	  printk(KERN_INFO "first allocation failed\n");
 	}
-  rule[0] = kmalloc(sizeof(rule_t), GFP_ATOMIC);
-  if (!rule[0])
-   {
-	  printk(KERN_INFO "second allocation failed\n");
+	int j;
+	for (j=0; j<8; j++)
+	{
+		rule[j] = kmalloc(sizeof(rule_t), GFP_ATOMIC);
+        if (!rule[j])
+		{
+			printk(KERN_INFO "%u allocation failed\n", j);
+		}
 	}
   printk(KERN_DEBUG "init fw\n");
   major_number = register_chrdev(0, "My_Device1", &fops);

@@ -17,7 +17,7 @@ int check_against_rule(rule_t *rule, __u32 src_add,	__u32 dst_add,	__u8 proto,	_
 		printk(KERN_INFO "rule empty\n");
 		return -1; //no match
 	}
-	printk(KERN_INFO "src_ip: ");
+	/*printk(KERN_INFO "src_ip: ");
 	print_ip(src_add);
 	printk(KERN_INFO "dst_ip: ");
 	print_ip(dst_add);
@@ -34,21 +34,19 @@ int check_against_rule(rule_t *rule, __u32 src_add,	__u32 dst_add,	__u8 proto,	_
 	print_ip(ntohl(rule -> dst_prefix_mask));
 	printk(KERN_INFO "dst_ip & mask: ");
 	print_ip(dst_add & ntohl(rule -> dst_prefix_mask));
-	printk(KERN_INFO "\n");
+	printk(KERN_INFO "\n");*/
 	
 	
-	/*if ((rule -> protocol != PROT_ANY) && (rule -> protocol != proto)) //valitate protocol
+	if ((rule -> protocol != PROT_ANY) && (rule -> protocol != proto)) //valitate protocol
 		return -1; //no match
 	if ((rule -> src_ip != 0) && ((ntohl(rule -> src_ip) & ntohl(rule -> src_prefix_mask)) != (src_add & ntohl(rule -> src_prefix_mask))))
 		return -1; //no match
 	if ((rule -> dst_ip != 0) && ((ntohl(rule -> dst_ip) & ntohl(rule -> dst_prefix_mask)) != (dst_add & ntohl(rule -> dst_prefix_mask))))
-		return -1; //no match*/
+		return -1; //no match
 		
 
 
-
-	//return rule -> action;		//return action of the rule - NF_DROP or NF_ACCEPT
-	return 0;
+	return rule -> action;		//return action of the rule - NF_DROP or NF_ACCEPT
 }
 
 int check_against_table(rule_t **rule_table, int size, struct sk_buff *skb)
@@ -88,12 +86,19 @@ int check_against_table(rule_t **rule_table, int size, struct sk_buff *skb)
 	}
 	if ((proto != PROT_ICMP) && (proto != PROT_TCP) && (proto != PROT_UDP))
 		proto = PROT_OTHER;
-	retval = check_against_rule(rule_table[0], src_add, dst_add, proto, src_prt, dst_prt);
+	int i;	
+	for (i=0; i<size; i++)
+	{
+		if (!rule_table[i])
+			return NF_ACCEPT;
+		retval = check_against_rule(rule_table[i], src_add, dst_add, proto, src_prt, dst_prt);
+		if (retval != -1)
+			return retval;
+	}	
+	
 	/*print_ip(src_add);
 	print_ip(dst_add);
 	printk(KERN_INFO "%u\n%u\n%u\n\n", proto, src_prt, dst_prt);*/
 	//printk(KERN_INFO "rule src_ip: %u\n", rule_table[0]->src_ip);
-	if (retval == -1)
-		return NF_ACCEPT;
-	return retval;		
+	return NF_ACCEPT;		
 }

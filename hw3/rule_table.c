@@ -43,9 +43,13 @@ int check_against_rule(rule_t *rule, __u32 src_add,	__u32 dst_add,	__u8 proto,	_
 		return -1; //no match
 	if ((rule -> dst_ip != 0) && ((ntohl(rule -> dst_ip) & ntohl(rule -> dst_prefix_mask)) != (dst_add & ntohl(rule -> dst_prefix_mask))))
 		return -1; //no match
+	if ((rule -> src_port != 0) && (rule -> src_port != htons(src_prt)))
+		return -1; //no match
+	if ((rule -> dst_port != 0) && (rule -> dst_port != htons(dst_prt)))
+		return -1; //no match		
 		
 
-
+	printk(KERN_INFO "%s\n", rule ->rule_name);
 	return rule -> action;		//return action of the rule - NF_DROP or NF_ACCEPT
 }
 

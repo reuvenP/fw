@@ -65,13 +65,11 @@ unsigned int hook_func(unsigned int hooknum, struct sk_buff *skb, const struct n
 	blocked++;                 
   	return NF_DROP;   
   }                  */
-  //rule_t **rule = kmalloc(3*sizeof(rule_t*), GFP_ATOMIC);
   if (!rule)
   {
 	  printk(KERN_INFO "first allocation empty\n");
 	  return NF_ACCEPT;
 	}
-  //rule[0] = kmalloc(sizeof(rule_t), GFP_ATOMIC);
   if (!rule[0])
    {
 	  printk(KERN_INFO "second allocation empty\n");
@@ -141,6 +139,7 @@ unsigned int hook_func(unsigned int hooknum, struct sk_buff *skb, const struct n
   rule[6]->protocol = 143;
   rule[6]->action = NF_ACCEPT;
   
+  //rule[7]->rule_name="any any drop";
   rule[7]->src_ip = 0;
   rule[7]->src_prefix_mask = 0;
   rule[7]->dst_ip = 0;

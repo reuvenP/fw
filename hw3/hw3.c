@@ -34,37 +34,6 @@ static ssize_t display(struct device* dev, struct device_attribute* attr, const 
 //function to be called by hook
 unsigned int hook_func(unsigned int hooknum, struct sk_buff *skb, const struct net_device *in, const struct net_device *out, int (*okfn)(struct sk_buff *))
 {
-	/*struct iphdr *ip_header = NULL; 
-  if (!skb)
-  {
-	  printk(KERN_DEBUG "skb null\n");
-	  return NF_ACCEPT;
-  }
-  ip_header = (struct iphdr *)skb_network_header(skb);
-  if (!ip_header)
-  {
-	  printk(KERN_DEBUG "ip_header null\n");
-	  return NF_ACCEPT;
-  }
-  //printk(KERN_DEBUG "src_ip: %u\n", ip_header->saddr);
- // printk(KERN_DEBUG "dest_ip: %u\n", ip_header->daddr);
-  //return NF_ACCEPT;
-  if ((ip_header->saddr == 50397194) || (ip_header->daddr == 50397194) || 
-  (ip_header->saddr == 50462730) || (ip_header->daddr == 50462730) || 
-  (ip_header->saddr == 251789322) || (ip_header->daddr == 251789322) || 
-  (ip_header->saddr == 0) || (ip_header->daddr == 0) ||
-  (ip_header->saddr == 16777343) || (ip_header->daddr == 16777343))
-  {
-	printk(KERN_DEBUG "*** packet passed ***\n");
-	passed++;
-	return NF_ACCEPT;
-  }
-  else
-  {
-	printk(KERN_DEBUG "*** packet blocked ***\n"); 
-	blocked++;                 
-  	return NF_DROP;   
-  }                  */
   if (!rule)
   {
 	  printk(KERN_INFO "first allocation empty\n");
@@ -84,6 +53,7 @@ unsigned int hook_func(unsigned int hooknum, struct sk_buff *skb, const struct n
   rule[0]->dst_port = 0;
   rule[0]->protocol = 143;
   rule[0]->action = NF_ACCEPT;
+  rule[0] -> ack = ACK_ANY;
   
   strcpy(rule[1]->rule_name, "gw ip");
   rule[1]->src_ip = 50397194;
@@ -94,6 +64,7 @@ unsigned int hook_func(unsigned int hooknum, struct sk_buff *skb, const struct n
   rule[1]->dst_port = 0;
   rule[1]->protocol = 143;
   rule[1]->action = NF_ACCEPT;
+  rule[1] -> ack = ACK_ANY;
   
   strcpy(rule[2]->rule_name, "gw ip");
   rule[2]->src_ip = 0;
@@ -104,6 +75,7 @@ unsigned int hook_func(unsigned int hooknum, struct sk_buff *skb, const struct n
   rule[2]->dst_port = 0;
   rule[2]->protocol = 143;
   rule[2]->action = NF_ACCEPT;
+  rule[2] -> ack = ACK_ANY;
   
   strcpy(rule[3]->rule_name, "gw ip");
   rule[3]->src_ip = 50462730;
@@ -114,6 +86,7 @@ unsigned int hook_func(unsigned int hooknum, struct sk_buff *skb, const struct n
   rule[3]->dst_port = 0;
   rule[3]->protocol = 143;
   rule[3]->action = NF_ACCEPT;
+  rule[3] -> ack = ACK_ANY;
   
   strcpy(rule[4]->rule_name, "gw ip");
   rule[4]->src_ip = 0;
@@ -124,6 +97,7 @@ unsigned int hook_func(unsigned int hooknum, struct sk_buff *skb, const struct n
   rule[4]->dst_port = 0;
   rule[4]->protocol = 143;
   rule[4]->action = NF_ACCEPT;
+  rule[4] -> ack = ACK_ANY;
   
   strcpy(rule[5]->rule_name, "gw ip");
   rule[5]->src_ip = 251789322;
@@ -134,6 +108,7 @@ unsigned int hook_func(unsigned int hooknum, struct sk_buff *skb, const struct n
   rule[5]->dst_port = 0;
   rule[5]->protocol = 143;
   rule[5]->action = NF_ACCEPT;
+  rule[5] -> ack = ACK_ANY;
   
   strcpy(rule[6]->rule_name, "gw ip");
   rule[6]->src_ip = 0;
@@ -144,6 +119,7 @@ unsigned int hook_func(unsigned int hooknum, struct sk_buff *skb, const struct n
   rule[6]->dst_port = 0;
   rule[6]->protocol = 143;
   rule[6]->action = NF_ACCEPT;
+  rule[6] -> ack = ACK_ANY;
   
   strcpy(rule[7]->rule_name, "any any drop");
   rule[7]->src_ip = 0;
@@ -154,6 +130,7 @@ unsigned int hook_func(unsigned int hooknum, struct sk_buff *skb, const struct n
   rule[7]->dst_port = 0;
   rule[7]->protocol = 143;
   rule[7]->action = NF_DROP;
+  rule[7] -> ack = ACK_ANY;
   
   int i = check_against_table(rule, 8, skb);
   

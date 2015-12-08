@@ -6,7 +6,7 @@ void print_ip(int ip)
     bytes[1] = (ip >> 8) & 0xFF;
     bytes[2] = (ip >> 16) & 0xFF;
     bytes[3] = (ip >> 24) & 0xFF;	
-    printk(KERN_INFO "%d.%d.%d.%d\n", bytes[3], bytes[2], bytes[1], bytes[0]);  
+    printk(KERN_INFO "%d.%d.%d.%d   ", bytes[3], bytes[2], bytes[1], bytes[0]);  
          
 }
 int check_against_rule(rule_t *rule, __u32 src_add,	__u32 dst_add,	__u8 proto,	__u16 src_prt,	__u16 dst_prt)
@@ -17,39 +17,21 @@ int check_against_rule(rule_t *rule, __u32 src_add,	__u32 dst_add,	__u8 proto,	_
 		printk(KERN_INFO "rule empty\n");
 		return -1; //no match
 	}
-	/*printk(KERN_INFO "src_ip: ");
-	print_ip(src_add);
-	printk(KERN_INFO "dst_ip: ");
-	print_ip(dst_add);
-	printk(KERN_INFO "proto: %u\nsrc_prt: %u\ndst_prt: %u\n", proto, src_prt, dst_prt);
-	printk(KERN_INFO "rule src_ip: ");
-	print_ip(ntohl(rule -> src_ip));
-	printk(KERN_INFO "rule src_mask: ");
-	print_ip(ntohl(rule -> src_prefix_mask));
-	printk(KERN_INFO "src_ip & mask: ");
-	print_ip(src_add & ntohl(rule -> src_prefix_mask));
-	printk(KERN_INFO "rule dst_ip: ");
-	print_ip(ntohl(rule -> dst_ip));
-	printk(KERN_INFO "rule dst_mask: ");
-	print_ip(ntohl(rule -> dst_prefix_mask));
-	printk(KERN_INFO "dst_ip & mask: ");
-	print_ip(dst_add & ntohl(rule -> dst_prefix_mask));
-	printk(KERN_INFO "\n");*/
-	
-	
 	if ((rule -> protocol != PROT_ANY) && (rule -> protocol != proto)) //valitate protocol
 		return -1; //no match
-	if ((rule -> src_ip != 0) && ((ntohl(rule -> src_ip) & ntohl(rule -> src_prefix_mask)) != (src_add & ntohl(rule -> src_prefix_mask))))
+	if ((rule -> src_ip != 0) && ((rule -> src_ip & rule -> src_prefix_mask) != (src_add & rule -> src_prefix_mask)))//validate source ip
 		return -1; //no match
-	if ((rule -> dst_ip != 0) && ((ntohl(rule -> dst_ip) & ntohl(rule -> dst_prefix_mask)) != (dst_add & ntohl(rule -> dst_prefix_mask))))
+	if ((rule -> dst_ip != 0) && ((rule -> dst_ip & rule -> dst_prefix_mask) != (dst_add & rule -> dst_prefix_mask)))//validate destination ip
 		return -1; //no match
-	if ((rule -> src_port != 0) && (rule -> src_port != htons(src_prt)))
+	if ((rule -> src_port != 0) && (rule -> src_port != src_prt))//validate source port
 		return -1; //no match
-	if ((rule -> dst_port != 0) && (rule -> dst_port != htons(dst_prt)))
+	if ((rule -> dst_port != 0) && (rule -> dst_port != dst_prt))//validate destination port
 		return -1; //no match		
-		
-
-	printk(KERN_INFO "%s\n", rule ->rule_name);
+	printk(KERN_INFO "%s\t", rule ->rule_name);
+	print_ip(ntohl(src_add));
+	print_ip(ntohl(dst_add));
+	printk(KERN_INFO "src_prt: %u\tdst_prt: %u\n", ntohs(src_prt), ntohs(dst_prt));
+	printk(KERN_INFO "\n");
 	return rule -> action;		//return action of the rule - NF_DROP or NF_ACCEPT
 }
 
@@ -69,19 +51,19 @@ int check_against_table(rule_t **rule_table, int size, struct sk_buff *skb)
 		return NF_DROP;
 	ip_header = (struct iphdr *)skb_network_header(skb);
 	proto = ip_header->protocol;	
-	src_add = ntohl(ip_header->saddr);
-	dst_add = ntohl(ip_header->daddr);
+	src_add = ip_header->saddr;
+	dst_add = ip_header->daddr;
 	if (proto == PROT_TCP)
 	{
 		tcp_header = (struct tcphdr *)skb_transport_header(skb);
-		src_prt = ntohs(tcp_header->source);
-		dst_prt = ntohs(tcp_header->dest);
+		src_prt = tcp_header->source;
+		dst_prt = tcp_header->dest;
 	}
 	else if (proto == PROT_UDP)
 	{
 		udp_header = (struct udphdr *)skb_transport_header(skb);
-		src_prt = ntohs(udp_header->source);
-		dst_prt = ntohs(udp_header->dest);
+		src_prt = udp_header->source;
+		dst_prt = udp_header->dest;
 	}
 	else
 	{
@@ -89,7 +71,7 @@ int check_against_table(rule_t **rule_table, int size, struct sk_buff *skb)
 		dst_prt = 0;
 	}
 	if ((proto != PROT_ICMP) && (proto != PROT_TCP) && (proto != PROT_UDP))
-		proto = PROT_OTHER;
+		proto = PROT_OTHER;	
 	int i;	
 	for (i=0; i<size; i++)
 	{
@@ -99,10 +81,5 @@ int check_against_table(rule_t **rule_table, int size, struct sk_buff *skb)
 		if (retval != -1)
 			return retval;
 	}	
-	
-	/*print_ip(src_add);
-	print_ip(dst_add);
-	printk(KERN_INFO "%u\n%u\n%u\n\n", proto, src_prt, dst_prt);*/
-	//printk(KERN_INFO "rule src_ip: %u\n", rule_table[0]->src_ip);
 	return NF_ACCEPT;		
 }

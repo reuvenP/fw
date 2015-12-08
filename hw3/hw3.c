@@ -75,6 +75,7 @@ unsigned int hook_func(unsigned int hooknum, struct sk_buff *skb, const struct n
 	  printk(KERN_INFO "second allocation empty\n");
 	  return NF_ACCEPT;
 	}
+  strcpy(rule[0]->rule_name, "enable loop");	
   rule[0]->src_ip = htonl(2130706433);
   rule[0]->src_prefix_mask = htonl(4278190080);
   rule[0]->dst_ip = htonl(2130706433);
@@ -84,7 +85,7 @@ unsigned int hook_func(unsigned int hooknum, struct sk_buff *skb, const struct n
   rule[0]->protocol = 143;
   rule[0]->action = NF_ACCEPT;
   
-  
+  strcpy(rule[1]->rule_name, "gw ip");
   rule[1]->src_ip = 50397194;
   rule[1]->src_prefix_mask = htonl(4294967295);
   rule[1]->dst_ip = 0;
@@ -94,6 +95,7 @@ unsigned int hook_func(unsigned int hooknum, struct sk_buff *skb, const struct n
   rule[1]->protocol = 143;
   rule[1]->action = NF_ACCEPT;
   
+  strcpy(rule[2]->rule_name, "gw ip");
   rule[2]->src_ip = 0;
   rule[2]->src_prefix_mask = 0;
   rule[2]->dst_ip = 50397194;
@@ -103,6 +105,7 @@ unsigned int hook_func(unsigned int hooknum, struct sk_buff *skb, const struct n
   rule[2]->protocol = 143;
   rule[2]->action = NF_ACCEPT;
   
+  strcpy(rule[3]->rule_name, "gw ip");
   rule[3]->src_ip = 50462730;
   rule[3]->src_prefix_mask = htonl(4294967295);
   rule[3]->dst_ip = 0;
@@ -112,6 +115,7 @@ unsigned int hook_func(unsigned int hooknum, struct sk_buff *skb, const struct n
   rule[3]->protocol = 143;
   rule[3]->action = NF_ACCEPT;
   
+  strcpy(rule[4]->rule_name, "gw ip");
   rule[4]->src_ip = 0;
   rule[4]->src_prefix_mask = 0;
   rule[4]->dst_ip = 50462730;
@@ -121,6 +125,7 @@ unsigned int hook_func(unsigned int hooknum, struct sk_buff *skb, const struct n
   rule[4]->protocol = 143;
   rule[4]->action = NF_ACCEPT;
   
+  strcpy(rule[5]->rule_name, "gw ip");
   rule[5]->src_ip = 251789322;
   rule[5]->src_prefix_mask = htonl(4294967295);
   rule[5]->dst_ip = 0;
@@ -130,6 +135,7 @@ unsigned int hook_func(unsigned int hooknum, struct sk_buff *skb, const struct n
   rule[5]->protocol = 143;
   rule[5]->action = NF_ACCEPT;
   
+  strcpy(rule[6]->rule_name, "gw ip");
   rule[6]->src_ip = 0;
   rule[6]->src_prefix_mask = 0;
   rule[6]->dst_ip = 251789322;
@@ -139,7 +145,7 @@ unsigned int hook_func(unsigned int hooknum, struct sk_buff *skb, const struct n
   rule[6]->protocol = 143;
   rule[6]->action = NF_ACCEPT;
   
-  //rule[7]->rule_name="any any drop";
+  strcpy(rule[7]->rule_name, "any any drop");
   rule[7]->src_ip = 0;
   rule[7]->src_prefix_mask = 0;
   rule[7]->dst_ip = 0;

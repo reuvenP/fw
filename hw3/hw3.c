@@ -10,15 +10,18 @@
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Reuven Plevinsky");
 
-static struct nf_hook_ops nfho;          //struct holding set of hook function options
+static struct nf_hook_ops nfho;         //struct holding set of hook function options
 static int major_number;
+static int rules_major;
 static struct class* my_class = NULL;
 static struct device* my_device = NULL;
+static struct device *fw_rules = NULL;
 static struct file_operations fops = {
 	.owner = THIS_MODULE
 };
 static int blocked = 0;
 static int passed = 0;
+static int table_size = 0;
 static rule_t **rule;
 static ssize_t reset(struct device* dev, struct device_attribute* attr, const char* buf, size_t count)
 {
@@ -31,6 +34,22 @@ static ssize_t display(struct device* dev, struct device_attribute* attr, const 
 {
 	return scnprintf(buf, PAGE_SIZE, "%u\n%u\n", blocked, passed);
 }
+
+static ssize_t show_rules(struct device* dev, struct device_attribute* attr, const char* buf, size_t count)
+{
+	/*int i=0;
+	for (i=0; i<table_size; i++)
+	{
+		
+	}*/
+	return scnprintf(buf, PAGE_SIZE, "show rules called\n"); 
+}
+
+static ssize_t load_rules(struct device* dev, struct device_attribute* attr, const char* buf, size_t count)
+{
+	return count;
+}
+
 //function to be called by hook
 unsigned int hook_func(unsigned int hooknum, struct sk_buff *skb, const struct net_device *in, const struct net_device *out, int (*okfn)(struct sk_buff *))
 {
@@ -44,7 +63,7 @@ unsigned int hook_func(unsigned int hooknum, struct sk_buff *skb, const struct n
 	  printk(KERN_INFO "second allocation empty\n");
 	  return NF_ACCEPT;
 	}
-  strcpy(rule[0]->rule_name, "enable loop");	
+  strcpy(rule[0]->rule_name, "enable_loop");	
   rule[0]->src_ip = htonl(2130706433);
   rule[0]->src_prefix_mask = htonl(4278190080);
   rule[0]->dst_ip = htonl(2130706433);
@@ -141,6 +160,7 @@ unsigned int hook_func(unsigned int hooknum, struct sk_buff *skb, const struct n
   return i;                                            
 }
 static DEVICE_ATTR(my_att, S_IRWXO , display, reset);
+static DEVICE_ATTR(fw_rules_att, S_IRWXO, show_rules, load_rules);
 //Called when module loaded using 'insmod'
 int init_module()
 {
@@ -160,10 +180,13 @@ int init_module()
 	}
   printk(KERN_DEBUG "init fw\n");
   major_number = register_chrdev(0, "My_Device1", &fops);
-  printk(KERN_INFO "major is %u\n", major_number);
+  rules_major = register_chrdev(0, "rule_device", &fops);
+  printk(KERN_INFO "major is %u rule major is %u\n", major_number, rules_major);
   my_class = class_create(THIS_MODULE, "my_class2");
   my_device = device_create(my_class, NULL, MKDEV(major_number, 0), NULL, "my_class2" "_" "My_Device1");
+  fw_rules = device_create(my_class, NULL, MKDEV(rules_major, 0), NULL, "my_class2" "_" "rule_device");
   device_create_file(my_device, &dev_attr_my_att.attr);
+  device_create_file(fw_rules, &dev_attr_fw_rules_att.attr);
   nfho.hook = hook_func;                       //function to call when conditions below met
   nfho.hooknum = NF_INET_PRE_ROUTING;            //called right after packet recieved, first hook in Netfilter
   nfho.pf = PF_INET;                           //IPV4 packets
@@ -179,10 +202,13 @@ void cleanup_module()
   //kfree(rule);
   printk(KERN_DEBUG "cleanup fw\n");
   nf_unregister_hook(&nfho);                     //cleanup – unregister hook
+  device_remove_file(fw_rules, &dev_attr_fw_rules_att.attr);
   device_remove_file(my_device, &dev_attr_my_att.attr);
+  device_destroy(my_class, MKDEV(rules_major, 0));
   device_destroy(my_class, MKDEV(major_number, 0));
   class_destroy(my_class);
   unregister_chrdev(major_number, "My_Device1");
+  unregister_chrdev(rules_major, "rule_device");
 } 
 
 

@@ -1,12 +1,15 @@
 #include "rule_table.h"
-void print_ip(int ip)
+char* print_ip(int ip)
 {
     unsigned char bytes[4];
+    char ret[100];
     bytes[0] = ip & 0xFF;
     bytes[1] = (ip >> 8) & 0xFF;
     bytes[2] = (ip >> 16) & 0xFF;
     bytes[3] = (ip >> 24) & 0xFF;	
-    printk(KERN_INFO "%d.%d.%d.%d   ", bytes[3], bytes[2], bytes[1], bytes[0]);  
+    printk(KERN_INFO "%d.%d.%d.%d   ", bytes[3], bytes[2], bytes[1], bytes[0]); 
+    sprintf(ret,  "%d.%d.%d.%d   ", bytes[3], bytes[2], bytes[1], bytes[0]);
+    return ret;
          
 }
 int string_to_ip(char *ip_str)
@@ -101,7 +104,7 @@ int check_against_table(rule_t **rule_table, int size, struct sk_buff *skb)
 	dst_add = ip_header->daddr;
 	if (proto == PROT_TCP)
 	{
-		tcp_header = (struct tcphdr *)skb_transport_header(skb);
+		tcp_header = (struct tcphdr *)(skb_transport_header(skb)+20);
 		src_prt = tcp_header->source;
 		dst_prt = tcp_header->dest;
 		int temp = tcp_header->ack;
@@ -112,7 +115,7 @@ int check_against_table(rule_t **rule_table, int size, struct sk_buff *skb)
 	}
 	else if (proto == PROT_UDP)
 	{
-		udp_header = (struct udphdr *)skb_transport_header(skb);
+		udp_header = (struct udphdr *)(skb_transport_header(skb)+20);
 		src_prt = udp_header->source;
 		dst_prt = udp_header->dest;
 		ack = ACK_ANY;

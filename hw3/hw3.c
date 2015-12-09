@@ -21,7 +21,7 @@ static struct file_operations fops = {
 };
 static int blocked = 0;
 static int passed = 0;
-static int table_size = 8;
+static int table_size = 0;
 static rule_t **rule;
 static ssize_t reset(struct device* dev, struct device_attribute* attr, const char* buf, size_t count)
 {
@@ -53,13 +53,41 @@ static ssize_t show_rules(struct device* dev, struct device_attribute* attr, con
 
 static ssize_t load_rules(struct device* dev, struct device_attribute* attr, const char* buf, size_t count)
 {
+	if (table_size != 0)
+	{
+		int i;
+		for (i=0;i<table_size;i++)
+			kfree(rule[i]);
+		kfree(rule);
+		table_size=0;
+	}	
+	int i, j=0;
+	for (i=0;i<strlen(buf);i++)
+	{
+		if (buf[i]=='\n')
+			j++;
+	}
+	table_size=j;
+	if (table_size==0)
+	{
+		rule=NULL;
+		return count;
+	}
+	rule = kmalloc(table_size*sizeof(rule_t*), GFP_ATOMIC);
+	for (i=0; i<table_size;i++)
+		rule[i] = kmalloc(sizeof(rule_t), GFP_ATOMIC);
+	for (i=0; i<table_size; i++)
+	{
+		sscanf(buf, "%s %u %u %u %u %u %u %u %u %u\n", &rule[i]->rule_name, &rule[i]->src_ip, &rule[i]->src_prefix_mask, &rule[i]->dst_ip,
+			&rule[i]->dst_prefix_mask, &rule[i]->src_port, &rule[i]->dst_port, &rule[i]->protocol, &rule[i]->action, &rule[i]->ack);
+	}
 	return count;
 }
 
 //function to be called by hook
 unsigned int hook_func(unsigned int hooknum, struct sk_buff *skb, const struct net_device *in, const struct net_device *out, int (*okfn)(struct sk_buff *))
 {
-  if (!rule)
+  /*if (!rule)
   {
 	  printk(KERN_INFO "first allocation empty\n");
 	  return NF_ACCEPT;
@@ -155,9 +183,9 @@ unsigned int hook_func(unsigned int hooknum, struct sk_buff *skb, const struct n
   rule[7]->dst_port = 0;
   rule[7]->protocol = 143;
   rule[7]->action = NF_DROP;
-  rule[7] -> ack = ACK_ANY;
+  rule[7] -> ack = ACK_ANY;*/
   
-  int i = check_against_table(rule, 8, skb);
+  int i = check_against_table(rule, table_size, skb);
   
   if (i == NF_ACCEPT)
 	passed++;
@@ -170,7 +198,7 @@ static DEVICE_ATTR(fw_rules_att, S_IRWXO, show_rules, load_rules);
 //Called when module loaded using 'insmod'
 int init_module()
 {
-  rule = kmalloc(8*sizeof(rule_t*), GFP_ATOMIC);
+  /*rule = kmalloc(8*sizeof(rule_t*), GFP_ATOMIC);
   if (!rule)
   {
 	  printk(KERN_INFO "first allocation failed\n");
@@ -183,7 +211,7 @@ int init_module()
 		{
 			printk(KERN_INFO "%u allocation failed\n", j);
 		}
-	}
+	}*/
   printk(KERN_DEBUG "init fw\n");
   major_number = register_chrdev(0, "My_Device1", &fops);
   rules_major = register_chrdev(0, "rule_device", &fops);
@@ -204,10 +232,15 @@ int init_module()
 //Called when module unloaded using 'rmmod'
 void cleanup_module()
 {
-	//kfree(rule[0]);
-  //kfree(rule);
+  if (table_size != 0)
+  {
+	  int i;
+	  for (	i=0; i<table_size; i++)
+		kfree(rule[i]);
+	  kfree(rule);
+  }
   printk(KERN_DEBUG "cleanup fw\n");
-  nf_unregister_hook(&nfho);                     //cleanup – unregister hook
+  nf_unregister_hook(&nfho);
   device_remove_file(fw_rules, &dev_attr_fw_rules_att.attr);
   device_remove_file(my_device, &dev_attr_my_att.attr);
   device_destroy(my_class, MKDEV(rules_major, 0));

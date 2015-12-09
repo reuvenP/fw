@@ -53,6 +53,7 @@ static ssize_t show_rules(struct device* dev, struct device_attribute* attr, con
 
 static ssize_t load_rules(struct device* dev, struct device_attribute* attr, const char* buf, size_t count)
 {
+	int n=0;
 	if (table_size != 0)
 	{
 		int i;
@@ -75,11 +76,11 @@ static ssize_t load_rules(struct device* dev, struct device_attribute* attr, con
 	}
 	rule = kmalloc(table_size*sizeof(rule_t*), GFP_ATOMIC);
 	for (i=0; i<table_size;i++)
-		rule[i] = kmalloc(sizeof(rule_t), GFP_ATOMIC);
+		rule[i] = kmalloc(sizeof(rule_t), GFP_ATOMIC);	
 	for (i=0; i<table_size; i++)
 	{
-		sscanf(buf, "%s %u %u %u %u %u %u %u %u %u\n", &rule[i]->rule_name, &rule[i]->src_ip, &rule[i]->src_prefix_mask, &rule[i]->dst_ip,
-			&rule[i]->dst_prefix_mask, &rule[i]->src_port, &rule[i]->dst_port, &rule[i]->protocol, &rule[i]->action, &rule[i]->ack);
+		sscanf(buf+n, "%s %u %u %u %u %u %u %u %u %u%n", &rule[i]->rule_name, &rule[i]->src_ip, &rule[i]->src_prefix_mask, &rule[i]->dst_ip,
+			&rule[i]->dst_prefix_mask, &rule[i]->src_port, &rule[i]->dst_port, &rule[i]->protocol, &rule[i]->action, &rule[i]->ack, &n);	
 	}
 	return count;
 }

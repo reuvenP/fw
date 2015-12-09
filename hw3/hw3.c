@@ -21,7 +21,7 @@ static struct file_operations fops = {
 };
 static int blocked = 0;
 static int passed = 0;
-static int table_size = 0;
+static int table_size = 8;
 static rule_t **rule;
 static ssize_t reset(struct device* dev, struct device_attribute* attr, const char* buf, size_t count)
 {
@@ -37,12 +37,18 @@ static ssize_t display(struct device* dev, struct device_attribute* attr, const 
 
 static ssize_t show_rules(struct device* dev, struct device_attribute* attr, const char* buf, size_t count)
 {
-	/*int i=0;
+	char temp_buf[4096];
+	temp_buf[0] = NULL;
+	
+	int i=0;
 	for (i=0; i<table_size; i++)
 	{
-		
-	}*/
-	return scnprintf(buf, PAGE_SIZE, "show rules called\n"); 
+		sprintf(temp_buf+strlen(temp_buf), "%s %u %u %u %u %u %u %u %u %u\n", rule[i]->rule_name, rule[i]->src_ip, rule[i]->src_prefix_mask, rule[i]->dst_ip,
+			rule[i]->dst_prefix_mask, rule[i]->src_port, rule[i]->dst_port, rule[i]->protocol, rule[i]->action, rule[i]->ack);
+	}
+	
+	scnprintf(buf, PAGE_SIZE, temp_buf); 
+	return strlen(temp_buf);
 }
 
 static ssize_t load_rules(struct device* dev, struct device_attribute* attr, const char* buf, size_t count)

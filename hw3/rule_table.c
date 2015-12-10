@@ -9,51 +9,7 @@ char* print_ip(int ip)
     bytes[3] = (ip >> 24) & 0xFF;	
     printk(KERN_INFO "%d.%d.%d.%d   ", bytes[3], bytes[2], bytes[1], bytes[0]); 
     sprintf(ret,  "%d.%d.%d.%d   ", bytes[3], bytes[2], bytes[1], bytes[0]);
-    return ret;
-         
-}
-int string_to_ip(char *ip_str)
-{
-	unsigned char ip_array[4];
-    int i = 0;
-    unsigned int ip = 0;
-    if (ip_str==NULL) {
-        return 0; 
-    }
-    memset(ip_array, 0, 4);
-    while (ip_str[i]!='.') {
-        ip_array[3] = ip_array[3]*10 + (ip_str[i++]-'0');
-    }
-    ++i;
-    while (ip_str[i]!='.') {
-        ip_array[2] = ip_array[2]*10 + (ip_str[i++]-'0');
-    }
-    ++i;
-    while (ip_str[i]!='.') {
-        ip_array[1] = ip_array[1]*10 + (ip_str[i++]-'0');
-    }
-    ++i;
-    while (ip_str[i]!='/') {
-        ip_array[0] = ip_array[0]*10 + (ip_str[i++]-'0');
-    }
-    /*convert from byte array to host long integer format*/
-    ip = (ip_array[0] << 24);
-    ip = (ip | (ip_array[1] << 16));
-    ip = (ip | (ip_array[2] << 8));
-    ip = (ip | ip_array[3]);
-    return ip;
-}
-
-int string_to_mask(char *ip_str)
-{
-	int i=0;
-	int mask_temp = 0;
-	while (ip_str[i]!='/')
-		i++;
-	i++;
-	while (ip_str[i]!='\0')
-		mask_temp = mask_temp*10 + (ip_str[i++]-'0');
-	return  htonl((0xffffffff >> (32 - mask_temp )) << (32 - mask_temp));
+    return ret;  
 }
 
 int check_against_rule(rule_t *rule, __u32 src_add,	__u32 dst_add,	__u8 proto,	__u16 src_prt,	__u16 dst_prt, ack_t ack)

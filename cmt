@@ -1,0 +1,3 @@
+#!/bin/bash
+var=$(date)
+git commit -am "$var"

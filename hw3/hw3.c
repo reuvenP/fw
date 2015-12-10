@@ -79,7 +79,7 @@ static ssize_t load_rules(struct device* dev, struct device_attribute* attr, con
 		rule[i] = kmalloc(sizeof(rule_t), GFP_ATOMIC);	
 	for (i=0; i<table_size; i++)
 	{
-		sscanf(buf+n, "%s %u %u %u %u %u %u %u %u %u%n", &rule[i]->rule_name, &rule[i]->src_ip, &rule[i]->src_prefix_mask, &rule[i]->dst_ip,
+		sscanf(buf+n+3, "%s %u %u %u %u %u %u %u %u %u%n", &rule[i]->rule_name, &rule[i]->src_ip, &rule[i]->src_prefix_mask, &rule[i]->dst_ip,
 			&rule[i]->dst_prefix_mask, &rule[i]->src_port, &rule[i]->dst_port, &rule[i]->protocol, &rule[i]->action, &rule[i]->ack, &n);	
 	}
 	return count;

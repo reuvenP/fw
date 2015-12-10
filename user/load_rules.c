@@ -3,6 +3,8 @@
 #include <netinet/in.h>
 #include <string.h>
 
+static char buf[4096];
+
 unsigned int string_to_ip(char *ip_str)
 {
 	unsigned char ip_array[4];
@@ -49,9 +51,8 @@ unsigned int string_to_mask(char *ip_str)
 	return  htonl((0xffffffff >> (32 - mask_temp )) << (32 - mask_temp));
 }
 
-char* extract_data(FILE *stream)
+void extract_data(FILE *stream)
 {
-	char buf[4096];
 	char rule_name[20];
 	char src_ip[30];
 	char dst_ip[30];
@@ -101,6 +102,36 @@ char* extract_data(FILE *stream)
 			dst_ip_u = string_to_ip(dst_ip);
 			dst_ip_mask_u = string_to_mask(dst_ip);
 		}
+		
+		if (strcmp(src_prt, "ANY") == 0)
+			src_prt_u = 0;
+		else
+			src_prt_u = htons(atoi(src_prt));
+			
+		if (strcmp(dst_prt, "ANY") == 0)
+			dst_prt_u = 0;
+		else
+			dst_prt_u = htons(atoi(dst_prt));
+			
+		if (strcmp(protocol, "ANY") == 0)
+			protocol_u = 143;
+		else
+			protocol_u = atoi(protocol);
+			
+		if (strcmp(action, "ACCEPT") ==0)
+			action_u = 1;
+		else
+			action_u = 0;
+			
+		if (strcmp(ack, "ANY") == 0)
+			ack_u = 3;
+		else if (strcmp(ack, "YES") == 0)
+			ack_u = 2;
+		else
+			ack_u = 1;		
+			
+		sprintf(buf+strlen(buf), "%s %u %u %u %u %u %u %u %u %u\n",rule_name, src_ip_u, src_ip_mask_u, dst_ip_u, dst_ip_mask_u, src_prt_u, dst_prt_u, protocol_u, action_u, ack_u);
+				
 		rule_name[0]='\0';
 		src_ip[0]='\0';
 		dst_ip[0]='\0';
@@ -109,9 +140,7 @@ char* extract_data(FILE *stream)
 		protocol[0]='\0';
 		action[0]='\0';
 		ack[0]='\0';
-		printf("%u %u %u %u\n", src_ip_u, dst_ip_u, src_ip_mask_u, dst_ip_mask_u);
 	}
-	return buf;
 }
 
 int main(int argc, char** argv)
@@ -123,12 +152,23 @@ int main(int argc, char** argv)
 	}
 	char *path = argv[1];
 	FILE *rule_file = fopen(path, "r");
+	FILE *driver = NULL;
 	if (!rule_file)
 	{
 		printf("file not exist\n");
 		return 0;
 	}
 	extract_data(rule_file);
+	driver = fopen("/sys/class/my_class2/my_class2_rule_device/fw_rules_att", "w");
+	if (!driver)
+	{
+		printf("Driver not exist\n");
+	}
+	else
+	{
+		fprintf(driver, buf);
+		fclose(driver);
+	}
 	fclose(rule_file);
 	return 0;
 }

@@ -1,0 +1,2 @@
+#!/bin/bash
+cat  /sys/class/my_class2/my_class2_rule_device/fw_rules_att

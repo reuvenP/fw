@@ -63,11 +63,11 @@ void print_rules(FILE *stream)
 		if (src_prt == 0)
 			strcpy(src_prt_s, "ANY");
 		else
-			sprintf(src_prt_s, "%u", src_prt);
+			sprintf(src_prt_s, "%u", ntohs(src_prt));
 		if (dst_prt == 0)
 			strcpy(dst_prt_s, "ANY");
 		else
-			sprintf(dst_prt_s, "%u", dst_prt);
+			sprintf(dst_prt_s, "%u", ntohs(dst_prt));
 		if (protocol == 143)
 			strcpy(protocol_s, "ANY");
 		else if (protocol == 17)

@@ -7,22 +7,64 @@
 #include <linux/device.h>
 #include <linux/slab.h>
 #include "rule_table.h"
+#include "log_table.h"
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Reuven Plevinsky");
 
 static struct nf_hook_ops nfho;         //struct holding set of hook function options
 static int major_number;
 static int rules_major;
+static int log_major;
 static struct class* my_class = NULL;
 static struct device* my_device = NULL;
 static struct device *fw_rules = NULL;
+int actual_rx_size = 8;
+static ssize_t log_read(struct file *filp, char *buffer, size_t length, loff_t *offset)
+{
+	ssize_t bytes;
+    if (actual_rx_size < length)
+        bytes = actual_rx_size;
+    else
+        bytes = length;
+
+    printk("user requesting data, our buffer has (%d) \n", actual_rx_size);
+
+    /* Check to see if there is data to transfer */
+    if (bytes == 0)
+        return 0;
+
+    /* Transfering data to user space */ 
+    int retval = copy_to_user(buffer, "blabla\n", bytes);
+
+    if (retval) {
+        printk("copy_to_user() could not copy %d bytes.\n", retval);
+        return -EFAULT;
+    } else {
+        printk("copy_to_user() succeeded!\n");
+        actual_rx_size -= bytes;
+        return bytes;
+    }
+	//copy_to_user;
+	return 0;
+}
+static int log_release(struct inode *inode, struct file *file)
+{
+	actual_rx_size = 8;
+	return 0;
+}
 static struct file_operations fops = {
 	.owner = THIS_MODULE
+};
+static struct file_operations log_fops = {
+	.owner = THIS_MODULE,
+	.read = log_read,
+	.release = log_release
 };
 static int blocked = 0;
 static int passed = 0;
 static int table_size = 0;
 static rule_t **rule;
+static log_row_t **log;
 static ssize_t reset(struct device* dev, struct device_attribute* attr, const char* buf, size_t count)
 {
 	blocked=0;
@@ -99,13 +141,15 @@ unsigned int hook_func(unsigned int hooknum, struct sk_buff *skb, const struct n
 }
 static DEVICE_ATTR(my_att, S_IRWXO , display, reset);
 static DEVICE_ATTR(fw_rules_att, S_IRWXO, show_rules, load_rules);
+
 //Called when module loaded using 'insmod'
 int init_module()
 {
   printk(KERN_DEBUG "init fw\n");
   major_number = register_chrdev(0, "My_Device1", &fops);
   rules_major = register_chrdev(0, "rule_device", &fops);
-  printk(KERN_INFO "major is %u rule major is %u\n", major_number, rules_major);
+  log_major = register_chrdev(0, "log_device", &log_fops);
+  printk(KERN_INFO "major is %u rule major is %u log major is %u\n", major_number, rules_major, log_major);
   my_class = class_create(THIS_MODULE, "my_class2");
   my_device = device_create(my_class, NULL, MKDEV(major_number, 0), NULL, "my_class2" "_" "My_Device1");
   fw_rules = device_create(my_class, NULL, MKDEV(rules_major, 0), NULL, "my_class2" "_" "rule_device");
@@ -138,6 +182,7 @@ void cleanup_module()
   class_destroy(my_class);
   unregister_chrdev(major_number, "My_Device1");
   unregister_chrdev(rules_major, "rule_device");
+  unregister_chrdev(log_major, "log_device");
 } 
 
 

@@ -3,7 +3,7 @@
 
 #include "fw.h"
 
-
+static ssize_t log_read(struct file *, char *, size_t, loff_t *);
 
 
 

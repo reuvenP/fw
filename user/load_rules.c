@@ -2,12 +2,11 @@
 #include <stdlib.h>
 #include <netinet/in.h>
 #include <string.h>
+#include <sys/types.h>
+#include <regex.h>
 
 static char buf[4096];
-/*reti = regcomp(&regex, "^([0-9]|[1-9][0-9]|1([0-9][0-9])|2([0-4][0-9]|5[0-5]))\\."
-             "([0-9]|[1-9][0-9]|1([0-9][0-9])|2([0-4][0-9]|5[0-5]))\\."
-             "([0-9]|[1-9][0-9]|1([0-9][0-9])|2([0-4][0-9]|5[0-5]))\\."
-             "([0-9]|[1-9][0-9]|1([0-9][0-9])|2([0-4][0-9]|5[0-5]))/([0-9]|[1-2][0-9]|3[0-2])$", REG_EXTENDED);*/
+
 unsigned int string_to_ip(char *ip_str)
 {
 	unsigned char ip_array[4];
@@ -54,8 +53,10 @@ unsigned int string_to_mask(char *ip_str)
 	return  htonl((0xffffffff >> (32 - mask_temp )) << (32 - mask_temp));
 }
 
-void extract_data(FILE *stream)
+int extract_data(FILE *stream)
 {
+	regex_t regex;
+    int reti;
 	char rule_name[20];
 	char src_ip[30];
 	char dst_ip[30];
@@ -82,8 +83,35 @@ void extract_data(FILE *stream)
 	protocol[0]='\0';
 	action[0]='\0';
 	ack[0]='\0';
+	reti = regcomp(&regex, "^([0-9]|[1-9][0-9]|1([0-9][0-9])|2([0-4][0-9]|5[0-5]))\\."
+             "([0-9]|[1-9][0-9]|1([0-9][0-9])|2([0-4][0-9]|5[0-5]))\\."
+             "([0-9]|[1-9][0-9]|1([0-9][0-9])|2([0-4][0-9]|5[0-5]))\\."
+             "([0-9]|[1-9][0-9]|1([0-9][0-9])|2([0-4][0-9]|5[0-5]))/([0-9]|[1-2][0-9]|3[0-2])$", REG_EXTENDED);
+    if( reti )
+    {
+		 puts("Could not compile regex\n");
+		 return -1;  
+	}        
 	while (fscanf(stream, "%s %s %s %s %s %s %s %s", rule_name, src_ip, dst_ip, src_prt, dst_prt, protocol, action, ack) == 8)
 	{
+		if (strcmp(src_ip, "ANY") != 0)
+		{
+			reti = regexec(&regex, src_ip, 0, NULL, 0);
+			if (reti == REG_NOMATCH)
+			{
+				printf("%s is not valid IP\n", src_ip);
+				return -1;
+			}
+		}
+		if (strcmp(dst_ip, "ANY") != 0)
+		{
+			reti = regexec(&regex, dst_ip, 0, NULL, 0);
+			if (reti == REG_NOMATCH)
+			{
+				printf("%s is not valid IP\n", dst_ip);
+				return -1;
+			}
+		}
 		if (strcmp(src_ip, "ANY") == 0)
 		{
 			src_ip_u = 0;
@@ -109,29 +137,61 @@ void extract_data(FILE *stream)
 		if (strcmp(src_prt, "ANY") == 0)
 			src_prt_u = 0;
 		else
+		{
+			if ((atoi(src_prt) < 1) || (atoi(src_prt) > 65535))
+			{
+				printf("%s is not valid port\n", src_prt);
+				return -1;
+			}
 			src_prt_u = htons(atoi(src_prt));
+		}
 			
 		if (strcmp(dst_prt, "ANY") == 0)
 			dst_prt_u = 0;
 		else
+		{
+			if ((atoi(dst_prt) < 1) || (atoi(dst_prt) > 65535))
+			{
+				printf("%s is not valid port\n", dst_prt);
+				return -1;
+			}
 			dst_prt_u = htons(atoi(dst_prt));
+		}
 			
 		if (strcmp(protocol, "ANY") == 0)
 			protocol_u = 143;
+		else if(strcmp(protocol, "TCP") == 0)
+			protocol_u = 6;
+		else if (strcmp(protocol, "UDP") == 0)	
+			protocol_u = 17;
+		else if(strcmp(protocol, "OTHER") == 0)
+			protocol_u = 255;
 		else
-			protocol_u = atoi(protocol);
-			
+		{
+			printf("%s is not valid protocol. valid values: ANY, TCP, UDP, OTHER\n", protocol);	
+			return -1;
+		}
 		if (strcmp(action, "ACCEPT") ==0)
 			action_u = 1;
-		else
+		else if (strcmp(action, "DROP") ==0)
 			action_u = 0;
+		else
+		{
+			printf("%s is not valid action. valid values: ACCEPT, DROP\n", action);	
+			return -1;
+		}	
 			
 		if (strcmp(ack, "ANY") == 0)
 			ack_u = 3;
 		else if (strcmp(ack, "YES") == 0)
 			ack_u = 2;
+		else if (strcmp(ack, "NO") == 0)
+			ack_u = 1;	
 		else
-			ack_u = 1;		
+		{
+			printf("%s is not valid ack. valid values: ANY, YES, NO\n", ack);	
+			return -1;
+		}		
 			
 		sprintf(buf+strlen(buf), "%s %u %u %u %u %u %u %u %u %u\n",rule_name, src_ip_u, src_ip_mask_u, dst_ip_u, dst_ip_mask_u, src_prt_u, dst_prt_u, protocol_u, action_u, ack_u);
 				
@@ -144,6 +204,7 @@ void extract_data(FILE *stream)
 		action[0]='\0';
 		ack[0]='\0';
 	}
+	return 0;
 }
 
 int main(int argc, char** argv)
@@ -161,7 +222,12 @@ int main(int argc, char** argv)
 		printf("file not exist\n");
 		return 0;
 	}
-	extract_data(rule_file);
+	int success = extract_data(rule_file);
+	if (success == -1)
+	{
+		fclose(rule_file);
+		return 0;
+	}
 	driver = fopen("/sys/class/my_class2/my_class2_rule_device/fw_rules_att", "w");
 	if (!driver)
 	{

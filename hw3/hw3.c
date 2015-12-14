@@ -18,6 +18,7 @@ static int log_major;
 static struct class* my_class = NULL;
 static struct device* my_device = NULL;
 static struct device *fw_rules = NULL;
+static struct device *fw_logs = NULL;
 int actual_log_size = 0;
 static ssize_t log_read(struct file *filp, char *buffer, size_t length, loff_t *offset)
 {
@@ -58,7 +59,6 @@ static int blocked = 0;
 static int passed = 0;
 static int table_size = 0;
 static rule_t **rule;
-static log_row_t **log;
 static ssize_t reset(struct device* dev, struct device_attribute* attr, const char* buf, size_t count)
 {
 	blocked=0;
@@ -147,6 +147,7 @@ int init_module()
   my_class = class_create(THIS_MODULE, "my_class2");
   my_device = device_create(my_class, NULL, MKDEV(major_number, 0), NULL, "my_class2" "_" "My_Device1");
   fw_rules = device_create(my_class, NULL, MKDEV(rules_major, 0), NULL, "my_class2" "_" "rule_device");
+  fw_logs = device_create(my_class, NULL, MKDEV(log_major, 0), NULL, "log_device");
   device_create_file(my_device, &dev_attr_my_att.attr);
   device_create_file(fw_rules, &dev_attr_fw_rules_att.attr);
   nfho.hook = hook_func;                       //function to call when conditions below met
@@ -154,6 +155,15 @@ int init_module()
   nfho.pf = PF_INET;                           //IPV4 packets
   nfho.priority = NF_IP_PRI_FIRST;             //set to highest priority over all other hook functions
   nf_register_hook(&nfho);                     //register hook
+  
+  log_row_t log1;
+  log_row_t log2;
+  int test1 = add_log(&log1);
+  int test2 = add_log(&log2);
+  printk(KERN_INFO "%u %u\n", test1, test2);
+  remove_all();
+  
+  
   return 0;                                    //return 0 for success
 }
 
@@ -173,6 +183,7 @@ void cleanup_module()
   device_remove_file(my_device, &dev_attr_my_att.attr);
   device_destroy(my_class, MKDEV(rules_major, 0));
   device_destroy(my_class, MKDEV(major_number, 0));
+  device_destroy(my_class, MKDEV(log_major, 0));
   class_destroy(my_class);
   unregister_chrdev(major_number, "My_Device1");
   unregister_chrdev(rules_major, "rule_device");

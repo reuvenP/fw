@@ -1,8 +1,30 @@
 #include "log_table.h"
 
 
-static ssize_t log_read(struct file *filp, char *buffer, size_t length, loff_t *offset)
+
+int add_log(log_row_t *log)
 {
-	copy_to_user(buffer, "blabla\n", 8);
-	return 8;
+	log_node *tracker = root;
+	if (!log)
+		return -1;
+	while (tracker-> next)
+		tracker = tracker -> next;
+	tracker -> next = (log_node*)kmalloc(sizeof(log_node), GFP_ATOMIC);
+	if (!tracker -> next)
+		return -1;
+	//tracker -> next -> log_row = log;
+	return 0;	
 }
+
+/*void remove_all()
+{
+	log_node *tracker = root;
+	while (tracker-> next)
+	{
+		log_node *temp = tracker;
+		tracker = tracker -> next;
+		kfree(temp);
+	}
+}*/
+
+

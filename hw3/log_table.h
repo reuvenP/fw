@@ -3,7 +3,24 @@
 
 #include "fw.h"
 
-static ssize_t log_read(struct file *, char *, size_t, loff_t *);
+typedef struct 
+{
+	log_row_t *log_row;
+	log_node *next;
+	log_node *prev;
+} log_node;
+
+static log_node *root;
+
+
+int add_log(log_row_t *log);
+int remove_log(log_row_t *log);
+log_row_t *search_log(log_row_t log);
+void remove_all();
+
+
+
+
 
 
 

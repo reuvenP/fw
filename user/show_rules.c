@@ -39,15 +39,23 @@ void print_rules(FILE *stream)
 	unsigned int protocol;
 	unsigned int action;
 	unsigned int ack;
+	puts("Rule Name\tSource IP\tDest IP\tSorce Port\tDest Port\tProtocol\tAction\tAck");
 	while (fscanf(stream, "%s %u %u %u %u %u %u %u %u %u", rule_name, &src_ip, &src_mask, &dst_ip, &dst_mask, &src_prt, &dst_prt, &protocol, &action, &ack) == 10)
 	{
-			
+		ip_int_to_string(src_ip, src_mask, src_ip_mask);
+		ip_int_to_string(dst_ip, dst_mask, dst_ip_mask);
+		printf("%s\t%s\t%s\t%u\t%u\t%u\t%u\t%u\n", rule_name, src_ip_mask,  dst_ip_mask, src_prt, dst_prt, protocol, action, ack);
 	}
 }
 
 int main()
 {
-	ip_int_to_string(251789322, 255, src_ip_mask);
-	puts(src_ip_mask);
+	FILE *file = fopen("/sys/class/my_class2/my_class2_rule_device/fw_rules_att", "r");
+	if (!file)
+	{
+		printf("Driver not exist\n");
+		return 0;
+	}
+	print_rules(file);
 	return 0;
 }

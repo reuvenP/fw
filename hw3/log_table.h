@@ -8,14 +8,12 @@ typedef struct
 	log_row_t *log_row;
 	log_node *next;
 	log_node *prev;
-} log_node;
+}log_node;
 
-static log_node *root;
-
+static log_node *root=NULL;
 
 int add_log(log_row_t *log);
-int remove_log(log_row_t *log);
-log_row_t *search_log(log_row_t log);
+log_row_t *find_log(log_row_t log);
 void remove_all();
 
 

@@ -20,6 +20,7 @@ static struct device* my_device = NULL;
 static struct device *fw_rules = NULL;
 static struct device *fw_logs = NULL;
 int actual_log_size = 0;
+
 static ssize_t log_read(struct file *filp, char *buffer, size_t length, loff_t *offset)
 {
 	ssize_t bytes;
@@ -156,13 +157,29 @@ int init_module()
   nfho.priority = NF_IP_PRI_FIRST;             //set to highest priority over all other hook functions
   nf_register_hook(&nfho);                     //register hook
   
-  log_row_t log1;
-  log_row_t log2;
-  int test1 = add_log(&log1);
-  int test2 = add_log(&log2);
-  printk(KERN_INFO "%u %u\n", test1, test2);
-  remove_all();
   
+
+  log_row_t *p[4];
+	p[0] = kmalloc(sizeof(log_row_t), GFP_ATOMIC);
+	p[1] = kmalloc(sizeof(log_row_t), GFP_ATOMIC);
+	p[2] = kmalloc(sizeof(log_row_t), GFP_ATOMIC);
+	p[3] = kmalloc(sizeof(log_row_t), GFP_ATOMIC);
+	int jj;
+	for (jj = 0; jj < 4; jj++)
+	{
+		p[jj]->action = jj;
+		p[jj]->count = 0;
+		p[jj]->dst_ip = jj;
+		p[jj]->dst_port = jj;
+		p[jj]->hooknum = jj;
+		p[jj]->protocol = jj;
+		p[jj]->reason = REASON_FW_INACTIVE;
+		p[jj]->src_ip = jj;
+		p[jj]->src_port = jj;
+		p[jj]->timestamp = jj;
+		add_log(p[jj]);
+	}
+  remove_all();
   
   return 0;                                    //return 0 for success
 }

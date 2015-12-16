@@ -4,48 +4,12 @@
 
 int add_log(log_row_t *log)
 {
-	log_node *tracker = root;
-	if (!log)
-		return -1;
-	while (tracker-> next)
-		tracker = tracker -> next;
-	tracker -> next = (log_node*)kmalloc(sizeof(log_node), GFP_ATOMIC);
-	if (!tracker -> next)
-		return -1;
-	//tracker -> next -> log_row = log;
-	return 0;	
-}
-
-/*void remove_all()
-{
-	log_node *tracker = root;
-	while (tracker-> next)
-	{
-		log_node *temp = tracker;
-		tracker = tracker -> next;
-		kfree(temp);
-	}
-}*/
-
-
-/*
-
-
-struct log_node
-{
-	log_row_t *log_row;
-	log_node *next;
-	log_node *prev;
-} ;
-static log_node *root;
-int add_log(log_row_t *log)
-{
 	if (!log)
 		return -1;
 	log_node *tr = root;
 	if (!tr)
 	{
-		root = (log_node*)malloc(sizeof(log_node));
+		root = kmalloc(sizeof(log_node), GFP_ATOMIC);
 		root->prev = NULL;
 		root->next = NULL;
 		root->log_row = log;
@@ -53,7 +17,7 @@ int add_log(log_row_t *log)
 	}
 	while (tr->next)
 		tr = tr->next;
-	tr->next = (log_node*)malloc(sizeof(log_node));
+	tr->next = kmalloc(sizeof(log_node), GFP_ATOMIC);
 	tr->next->prev = tr;
 	tr->next->next = NULL;
 	tr->next->log_row = log;
@@ -72,15 +36,15 @@ void remove_all()
 		log_node *temp = tr;
 		tr = tr->prev;
 		if (temp->log_row)
-			free(temp->log_row);
-		free(temp);
+			kfree(temp->log_row);
+		kfree(temp);
 		tr->next = NULL;
 	}
 	if (tr)
 	{
 		if (tr->log_row)
-			free(tr->log_row);
-		free(tr);
+			kfree(tr->log_row);
+		kfree(tr);
 	}
 	root = NULL;
 }
@@ -107,7 +71,7 @@ log_row_t *find_log(log_row_t log)
 	}
 	return NULL;
 }
-
+/*
 int main()
 {
 	root = NULL;

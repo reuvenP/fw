@@ -55,7 +55,7 @@ int create_log(unsigned char protocol, unsigned char action, unsigned char hookn
 {
 	log_to_add = kmalloc(sizeof(log_to_add), GFP_ATOMIC);
 	log_to_add->action = action;
-	log_to_add->count = 0;
+	log_to_add->count = 1;
 	log_to_add->dst_ip = dst_ip;
 	log_to_add->dst_port = dst_port;
 	log_to_add->hooknum = hooknum;

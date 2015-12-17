@@ -138,6 +138,7 @@ static DEVICE_ATTR(fw_rules_att, S_IRWXO, show_rules, load_rules);
 //Called when module loaded using 'insmod'
 int init_module()
 {
+  init_log_list();
   printk(KERN_DEBUG "init fw\n");
   major_number = register_chrdev(0, "My_Device1", &fops);
   rules_major = register_chrdev(0, "rule_device", &fops);
@@ -155,7 +156,7 @@ int init_module()
   nfho.priority = NF_IP_PRI_FIRST;             //set to highest priority over all other hook functions
   nf_register_hook(&nfho);                     //register hook
   
-  init_log_list();
+  
 
   /*log_row_t *p[4];
 	p[0] = kmalloc(sizeof(log_row_t), GFP_ATOMIC);
@@ -198,7 +199,6 @@ void cleanup_module()
   }
   printk(KERN_DEBUG "cleanup fw\n");
   test();
-  remove_all();
   nf_unregister_hook(&nfho);
   device_remove_file(fw_rules, (const struct device_attribute *)&dev_attr_fw_rules_att.attr);
   device_remove_file(my_device, (const struct device_attribute *)&dev_attr_my_att.attr);
@@ -209,6 +209,7 @@ void cleanup_module()
   unregister_chrdev(major_number, "My_Device1");
   unregister_chrdev(rules_major, "rule_device");
   unregister_chrdev(log_major, "log_device");
+  remove_all();
 } 
 
 

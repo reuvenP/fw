@@ -91,7 +91,13 @@ int check_against_table(rule_t **rule_table, int size, struct sk_buff *skb)
 			return NF_ACCEPT;
 		retval = check_against_rule(rule_table[i], src_add, dst_add, proto, src_prt, dst_prt, ack);
 		if (retval != -1)
+		{
+			if (increase_log_counter(proto, retval, NF_INET_PRE_ROUTING, src_add, dst_add, src_prt, dst_prt, REASON_XMAS_PACKET) == -1)
+				create_log(proto, retval, NF_INET_PRE_ROUTING, src_add, dst_add, src_prt, dst_prt, REASON_XMAS_PACKET);
 			return retval;
+		}
 	}	
+	if (increase_log_counter(proto, NF_ACCEPT, NF_INET_PRE_ROUTING, src_add, dst_add, src_prt, dst_prt, REASON_NO_MATCHING_RULE) == -1)
+				create_log(proto, NF_ACCEPT, NF_INET_PRE_ROUTING, src_add, dst_add, src_prt, dst_prt, REASON_NO_MATCHING_RULE);
 	return NF_ACCEPT;		
 }

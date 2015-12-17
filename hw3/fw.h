@@ -10,6 +10,8 @@
 #include <linux/ip.h>
 #include <linux/tcp.h>
 #include <linux/udp.h>
+#include <linux/list.h>
+#include <linux/time.h>
 
 
 // the protocols we will work with
@@ -94,6 +96,7 @@ typedef struct {
 	__be16 			dst_port;	  	// if you use this struct in userspace, change the type to unsigned short
 	reason_t     	reason;       	// rule#index, or values from: reason_t
 	unsigned int   	count;        	// counts this line's hits
+	struct list_head list;			// node for linked list
 } log_row_t;
 
 #endif // _FW_H_

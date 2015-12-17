@@ -1,5 +1,5 @@
 #include "rule_table.h"
-char* print_ip(int ip)
+/*char* print_ip(int ip)
 {
     unsigned char bytes[4];
     char ret[100];
@@ -10,7 +10,7 @@ char* print_ip(int ip)
     printk(KERN_INFO "%d.%d.%d.%d   ", bytes[3], bytes[2], bytes[1], bytes[0]); 
     sprintf(ret,  "%d.%d.%d.%d   ", bytes[3], bytes[2], bytes[1], bytes[0]);
     return ret;  
-}
+}*/
 
 int check_against_rule(rule_t *rule, __u32 src_add,	__u32 dst_add,	__u8 proto,	__u16 src_prt,	__u16 dst_prt, ack_t ack)
 {
@@ -49,6 +49,7 @@ int check_against_table(rule_t **rule_table, int size, struct sk_buff *skb)
 	__u16 src_prt;
 	__u16 dst_prt;
 	ack_t ack;
+	int i, temp;
 	struct udphdr *udp_header;
 	struct tcphdr *tcp_header;
 	struct iphdr *ip_header; 
@@ -63,7 +64,7 @@ int check_against_table(rule_t **rule_table, int size, struct sk_buff *skb)
 		tcp_header = (struct tcphdr *)(skb_transport_header(skb)+20);
 		src_prt = tcp_header->source;
 		dst_prt = tcp_header->dest;
-		int temp = tcp_header->ack;
+		temp = tcp_header->ack;
 		if (temp == 0)
 			ack = ACK_YES;
 		else
@@ -83,8 +84,7 @@ int check_against_table(rule_t **rule_table, int size, struct sk_buff *skb)
 		ack = ACK_ANY;
 	}
 	if ((proto != PROT_ICMP) && (proto != PROT_TCP) && (proto != PROT_UDP))
-		proto = PROT_OTHER;	
-	int i;	
+		proto = PROT_OTHER;		
 	for (i=0; i<size; i++)
 	{
 		if (!rule_table[i])

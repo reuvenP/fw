@@ -1,7 +1,7 @@
 #include "log_table.h"
 
 
-
+/*
 int add_log(log_row_t *log)
 {
 	if (!log)
@@ -71,7 +71,7 @@ log_row_t *find_log(log_row_t log)
 	}
 	return NULL;
 }
-/*
+
 int main()
 {
 	root = NULL;

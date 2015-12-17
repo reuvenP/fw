@@ -2,8 +2,9 @@
 #define _LOG_TABLE_H_
 
 #include "fw.h"
+#include <linux/list.h>
 
-typedef struct 
+/*typedef struct 
 {
 	log_row_t *log_row;
 	log_node *next;
@@ -14,7 +15,7 @@ static log_node *root=NULL;
 
 int add_log(log_row_t *log);
 log_row_t *find_log(log_row_t log);
-void remove_all();
+void remove_all();*/
 
 
 

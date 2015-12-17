@@ -20,10 +20,12 @@ static struct device* my_device = NULL;
 static struct device *fw_rules = NULL;
 static struct device *fw_logs = NULL;
 int actual_log_size = 0;
+char temp_buf[PAGE_SIZE];
 
 static ssize_t log_read(struct file *filp, char *buffer, size_t length, loff_t *offset)
 {
 	ssize_t bytes;
+	int retval;
     if (actual_log_size < length)
         bytes = actual_log_size;
     else
@@ -34,7 +36,7 @@ static ssize_t log_read(struct file *filp, char *buffer, size_t length, loff_t *
         return 0;
 
     /* Transfering data to user space */ 
-    int retval = copy_to_user(buffer, "blabla\n", bytes);
+    retval = copy_to_user(buffer, "blabla\n", bytes);
 
     if (retval) {
         return -EFAULT;
@@ -60,47 +62,42 @@ static int blocked = 0;
 static int passed = 0;
 static int table_size = 0;
 static rule_t **rule;
-static ssize_t reset(struct device* dev, struct device_attribute* attr, const char* buf, size_t count)
+ssize_t reset(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
 {
 	blocked=0;
 	passed=0;
 	return count;
 }
 
-static ssize_t display(struct device* dev, struct device_attribute* attr, const char* buf, size_t count)
+ssize_t display(struct device *dev, struct device_attribute *attr, char *buf)
 {
 	return scnprintf(buf, PAGE_SIZE, "%u\n%u\n", blocked, passed);
 }
 
-static ssize_t show_rules(struct device* dev, struct device_attribute* attr, const char* buf, size_t count)
+ssize_t show_rules(struct device *dev, struct device_attribute *attr, char *buf)
 {
-	char temp_buf[4096];
-	temp_buf[0] = NULL;
-	
 	int i=0;
+	temp_buf[0] = '\0';
 	for (i=0; i<table_size; i++)
 	{
 		sprintf(temp_buf+strlen(temp_buf), "%s %u %u %u %u %u %u %u %u %u\n", rule[i]->rule_name, rule[i]->src_ip, rule[i]->src_prefix_mask, rule[i]->dst_ip,
 			rule[i]->dst_prefix_mask, rule[i]->src_port, rule[i]->dst_port, rule[i]->protocol, rule[i]->action, rule[i]->ack);
 	}
-	
 	scnprintf(buf, PAGE_SIZE, temp_buf); 
 	return strlen(temp_buf);
 }
 
-static ssize_t load_rules(struct device* dev, struct device_attribute* attr, const char* buf, size_t count)
+ssize_t load_rules(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
 {
-	int n=0;
-	char* tmp = buf;
+	int n=0, i, j=0;
+	char* tmp = (char*)buf;
 	if (table_size != 0)
 	{
-		int i;
 		for (i=0;i<table_size;i++)
 			kfree(rule[i]);
 		kfree(rule);
 		table_size=0;
 	}	
-	int i, j=0;
 	for (i=0;i<strlen(buf);i++)
 	{
 		if (buf[i]=='\n')
@@ -117,8 +114,9 @@ static ssize_t load_rules(struct device* dev, struct device_attribute* attr, con
 		rule[i] = kmalloc(sizeof(rule_t), GFP_ATOMIC);	
 	for (i=0; i<table_size; i++)
 	{
-		sscanf(tmp, "%s %u %u %u %u %u %u %u %u %u%n", &rule[i]->rule_name, &rule[i]->src_ip, &rule[i]->src_prefix_mask, &rule[i]->dst_ip,
-			&rule[i]->dst_prefix_mask, &rule[i]->src_port, &rule[i]->dst_port, &rule[i]->protocol, &rule[i]->action, &rule[i]->ack, &n);	
+		sscanf(tmp, "%s %u %u %u %u %u %u %u %u %u%n", rule[i]->rule_name, (unsigned int *)&rule[i]->src_ip, (unsigned int *)&rule[i]->src_prefix_mask, (unsigned int *)&rule[i]->dst_ip,
+			(unsigned int *)&rule[i]->dst_prefix_mask, (unsigned int *)&rule[i]->src_port, (unsigned int *)&rule[i]->dst_port, (unsigned int *)&rule[i]->protocol, 
+			(unsigned int *)&rule[i]->action, (unsigned int *)&rule[i]->ack, &n);	
 		tmp += n;
 	}
 	return count;
@@ -149,8 +147,8 @@ int init_module()
   my_device = device_create(my_class, NULL, MKDEV(major_number, 0), NULL, "my_class2" "_" "My_Device1");
   fw_rules = device_create(my_class, NULL, MKDEV(rules_major, 0), NULL, "my_class2" "_" "rule_device");
   fw_logs = device_create(my_class, NULL, MKDEV(log_major, 0), NULL, "log_device");
-  device_create_file(my_device, &dev_attr_my_att.attr);
-  device_create_file(fw_rules, &dev_attr_fw_rules_att.attr);
+  device_create_file(my_device, (const struct device_attribute *)&dev_attr_my_att.attr);
+  device_create_file(fw_rules, (const struct device_attribute *)&dev_attr_fw_rules_att.attr);
   nfho.hook = hook_func;                       //function to call when conditions below met
   nfho.hooknum = NF_INET_PRE_ROUTING;            //called right after packet recieved, first hook in Netfilter
   nfho.pf = PF_INET;                           //IPV4 packets
@@ -158,7 +156,7 @@ int init_module()
   nf_register_hook(&nfho);                     //register hook
   
   
-
+/*
   log_row_t *p[4];
 	p[0] = kmalloc(sizeof(log_row_t), GFP_ATOMIC);
 	p[1] = kmalloc(sizeof(log_row_t), GFP_ATOMIC);
@@ -180,7 +178,7 @@ int init_module()
 		add_log(p[jj]);
 	}
   remove_all();
-  
+  */
   return 0;                                    //return 0 for success
 }
 
@@ -196,8 +194,8 @@ void cleanup_module()
   }
   printk(KERN_DEBUG "cleanup fw\n");
   nf_unregister_hook(&nfho);
-  device_remove_file(fw_rules, &dev_attr_fw_rules_att.attr);
-  device_remove_file(my_device, &dev_attr_my_att.attr);
+  device_remove_file(fw_rules, (const struct device_attribute *)&dev_attr_fw_rules_att.attr);
+  device_remove_file(my_device, (const struct device_attribute *)&dev_attr_my_att.attr);
   device_destroy(my_class, MKDEV(rules_major, 0));
   device_destroy(my_class, MKDEV(major_number, 0));
   device_destroy(my_class, MKDEV(log_major, 0));

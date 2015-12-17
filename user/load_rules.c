@@ -235,7 +235,7 @@ int main(int argc, char** argv)
 	}
 	else
 	{
-		fprintf(driver, buf);
+		fprintf(driver, "%s", buf);
 		fclose(driver);
 	}
 	fclose(rule_file);

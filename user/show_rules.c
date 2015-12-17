@@ -12,7 +12,7 @@ void ip_int_to_string(unsigned int ip, unsigned int mask, char* dst)
 {
 	int mask_short = 0;
 	char temp[10];
-	temp[0]='/0';
+	temp[0]='\0';
 	int i;
 	struct in_addr addr = {ip};
 	dst[0]='\0';

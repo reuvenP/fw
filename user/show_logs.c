@@ -5,6 +5,13 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 
+void ip_int_to_string(unsigned int ip, char* dst)
+{
+	struct in_addr addr = {ip};
+	dst[0]='\0';
+	strcpy(dst, inet_ntoa( addr ));
+}
+
 struct list_head {
 	struct list_head *next, *prev;
 };
@@ -34,13 +41,18 @@ typedef struct {
 void print_logs(FILE *file)
 {
 	log_row_t log;
+	char ip_src[15];
+	char ip_dst[15];
 	if (!file)
+	{
+		puts("file empty");
 		return;
-		fread(&log, sizeof(log_row_t), 1, file);
-		printf("src_ip: %u dst_ip: %u count: %u\n", log.src_ip, log.dst_ip, log.count);
+	}
 	while(fread(&log, sizeof(log_row_t), 1, file))
 	{
-		printf("src_ip: %u dst_ip: %u count: %u\n", log.src_ip, log.dst_ip, log.count);
+		ip_int_to_string(log.src_ip, ip_src);
+		ip_int_to_string(log.dst_ip, ip_dst);
+		printf("src_ip: %s dst_ip: %s count: %u\n", ip_src, ip_dst, log.count);
 	}
 }
 
@@ -52,6 +64,7 @@ int main()
 		printf("Driver not exist\n");
 		return 0;
 	}
+	print_logs(file);
 	fclose(file);
 	return 0;
 }

@@ -108,7 +108,7 @@ int check_against_table(rule_t **rule_table, int size, struct sk_buff *skb)
 				log_to_add->src_ip = src_add;
 				log_to_add->src_port = src_prt;
 				log_to_add->timestamp = jiffies;
-				add_log(log_to_add);	
+				add_log(log_to_add);
 			}
 			return retval;
 		}

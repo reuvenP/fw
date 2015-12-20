@@ -1,8 +1,8 @@
 #include "log_table.h"
 
-
 void init_log_list(void)
 {
+	actual_log_size = 0;
 	INIT_LIST_HEAD(&log_list_head.list);
 }
 
@@ -11,6 +11,7 @@ int add_log(log_row_t *log)
 	if (!log)
 		return -1;
     list_add(&(log->list), &(log_list_head.list));	
+    actual_log_size++;
     return 0;
 }
 
@@ -50,30 +51,58 @@ int increase_log_counter(unsigned char protocol, unsigned char action, unsigned 
 	return -1;
 }
 
-/*int create_log(unsigned char protocol, unsigned char action, unsigned char hooknum, __be32 src_ip, __be32 dst_ip, __be16 src_port, __be16 dst_port, reason_t reason)
+int log_open(struct inode *node, struct file *f)
 {
-	printk(KERN_INFO "should insert: proto: %c action: %c\n"  , protocol, action);
-	printk(KERN_INFO "hooknum: %c src_ip: %u dst_ip: %u\n", hooknum, src_ip, dst_ip);
-	printk(KERN_INFO "src_prt: %u dst_prt: %u reason: %u\n", src_port, dst_port, reason);
-	log_row_t *log_to_add;
-	log_to_add = kmalloc(sizeof(log_to_add), GFP_ATOMIC);
-	if (!log_to_add)
+	int i=0, j = actual_log_size;
+	log_row_t *cur;
+	log_size = (actual_log_size*sizeof(log_row_t))+1;
+	log_buf = kmalloc(log_size, GFP_ATOMIC);
+	if (!log_buf)
 	{
-		printk(KERN_INFO "%s\n", "malloc failed");
+		log_size = 0;
 		return -1;
 	}
-	log_to_add->action = action;
-	log_to_add->count = 1;
-	log_to_add->dst_ip = dst_ip;
-	log_to_add->dst_port = dst_port;
-	log_to_add->hooknum = hooknum;
-	log_to_add->protocol = protocol;
-	log_to_add->reason = reason;
-	log_to_add->src_ip = src_ip;
-	log_to_add->src_port = src_port;
-	log_to_add->timestamp = jiffies;
-	list_add(&(log_to_add->list), &(log_list_head.list));
-	add_log(log_to_add);
+	list_for_each_entry(cur, &log_list_head.list, list)
+	{
+		if (i == j)
+			return 0;
+		memcpy(log_buf+(i*sizeof(log_row_t)), cur, sizeof(log_row_t));
+		i++;	
+	}
+	log_buf[log_size*sizeof(log_row_t)]='\0';
+	printk(KERN_INFO "%s\n", log_buf);
 	return 0;
-}*/
+}
+
+ssize_t log_read(struct file *filp, char *buffer, size_t length, loff_t *offset)
+{
+	ssize_t bytes;
+	int retval;
+    if (log_size < length)
+        bytes = log_size;
+    else
+        bytes = length;
+
+    /* Check to see if there is data to transfer */
+    if (bytes == 0)
+        return 0;
+
+    /* Transfering data to user space */ 
+    retval = copy_to_user(buffer, log_buf, bytes);
+
+    if (retval) {
+        return -EFAULT;
+    } else {
+        log_size -= bytes;
+        return bytes;
+    }
+}
+
+int log_release(struct inode *inode, struct file *file)
+{
+	if (log_buf)
+		kfree(log_buf);
+	log_size = 0;
+	return 0;
+}
 

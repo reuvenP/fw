@@ -99,5 +99,6 @@ int main()
 		return 0;
 	}
 	print_rules(file);
+	fclose(file);
 	return 0;
 }

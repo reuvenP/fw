@@ -19,44 +19,17 @@ static struct class* my_class = NULL;
 static struct device* my_device = NULL;
 static struct device *fw_rules = NULL;
 static struct device *fw_logs = NULL;
-static int actual_log_size=0;
 char temp_buf[PAGE_SIZE];
 
-static ssize_t log_read(struct file *filp, char *buffer, size_t length, loff_t *offset)
-{
-	ssize_t bytes;
-	int retval;
-    if (actual_log_size < length)
-        bytes = actual_log_size;
-    else
-        bytes = length;
 
-    /* Check to see if there is data to transfer */
-    if (bytes == 0)
-        return 0;
-
-    /* Transfering data to user space */ 
-    retval = copy_to_user(buffer, "blabla\n", bytes);
-
-    if (retval) {
-        return -EFAULT;
-    } else {
-        actual_log_size -= bytes;
-        return bytes;
-    }
-}
-static int log_release(struct inode *inode, struct file *file)
-{
-	actual_log_size = 0;
-	return 0;
-}
 static struct file_operations fops = {
 	.owner = THIS_MODULE
 };
 static struct file_operations log_fops = {
 	.owner = THIS_MODULE,
 	.read = log_read,
-	.release = log_release
+	.release = log_release,
+	.open = log_open
 };
 static int blocked = 0;
 static int passed = 0;

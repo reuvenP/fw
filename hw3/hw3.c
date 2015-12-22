@@ -13,6 +13,7 @@ MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Reuven Plevinsky");
 
 static struct nf_hook_ops nfho;         //struct holding set of hook function options
+static struct nf_hook_ops nfho_out;         //struct holding set of hook function options
 static int major_number;
 static int rules_major;
 static int log_major;
@@ -106,6 +107,17 @@ unsigned int hook_func(unsigned int hooknum, struct sk_buff *skb, const struct n
 	blocked++;
   return i;                                            
 }
+
+//function to be called by hook
+unsigned int hook_func_out(unsigned int hooknum, struct sk_buff *skb, const struct net_device *in, const struct net_device *out, int (*okfn)(struct sk_buff *))
+{
+  int i = check_against_table_out(rule, table_size, skb);
+  if (i == NF_ACCEPT)
+	passed++;
+  else if (i == NF_DROP)
+	blocked++;
+  return i;                                            
+}
 static DEVICE_ATTR(my_att, S_IRWXO , display, reset);
 static DEVICE_ATTR(fw_rules_att, S_IRWXO, show_rules, load_rules);
 
@@ -130,12 +142,13 @@ int init_module()
   nfho.pf = PF_INET;                           //IPV4 packets
   nfho.priority = NF_IP_PRI_FIRST;             //set to highest priority over all other hook functions
   nf_register_hook(&nfho);                     //register hook
-  create_state(1,1,1,1,1,1);
-  create_state(2,2,2,2,2,2);
-  create_state(3,3,3,3,3,3);
-  create_state(4,4,4,4,4,4);
-  state_s *rr = get_state(3,3,3,3,3);
-  rr->state = 7;
+  
+  nfho_out.hook = hook_func_out;                       //function to call when conditions below met
+  nfho_out.hooknum = NF_INET_POST_ROUTING;            //called right after packet recieved, first hook in Netfilter
+  nfho_out.pf = PF_INET;                           //IPV4 packets
+  nfho_out.priority = NF_IP_PRI_FIRST;             //set to highest priority over all other hook functions
+  nf_register_hook(&nfho_out);                     //register hook
+
   return 0;                                    //return 0 for success
 }
 
@@ -151,6 +164,7 @@ void cleanup_module()
   }
   printk(KERN_DEBUG "cleanup fw\n");
   nf_unregister_hook(&nfho);
+  nf_unregister_hook(&nfho_out);
   device_remove_file(fw_rules, (const struct device_attribute *)&dev_attr_fw_rules_att.attr);
   device_remove_file(my_device, (const struct device_attribute *)&dev_attr_my_att.attr);
   device_destroy(my_class, MKDEV(rules_major, 0));

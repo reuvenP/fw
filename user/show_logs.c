@@ -108,6 +108,11 @@ void print_logs(FILE *file)
 	log_row_t log;
 	char ip_src[15];
 	char ip_dst[15];
+	char port_src[10];
+	char port_dst[10];
+	char proto[10];
+	char ac[10];
+	char buffer[26];
 	struct tm* t;
 	//time_t tt;
 	if (!file)
@@ -115,17 +120,31 @@ void print_logs(FILE *file)
 		puts("file empty");
 		return;
 	}
+	printf("%-20s%-20s%-10s%-10s%-10s%-10s%-10s%-26s\n", "src_ip", "dst_ip", "src_prt", "dst_prt", "protocol", "action", "count", "timestamp");
 	while(fread(&log, sizeof(log_row_t), 1, file))
 	{
 		ip_int_to_string(log.src_ip, ip_src);
 		ip_int_to_string(log.dst_ip, ip_dst);
+		sprintf(port_src, "%u", ntohs(log.src_ip));
+		sprintf(port_dst, "%u", ntohs(log.dst_ip));
+		if (log.protocol == 17)
+			strcpy(proto, "UDP");
+		else if (log.protocol == 6)
+			strcpy(proto, "TCP");
+		else
+			sprintf(proto, "%d", log.protocol);
+		if (log.action == 1)
+			strcpy(ac, "ACCEPT");
+		else
+			strcpy(ac, "SROP");		
 		/*tt = (time_t)log.timestamp;
 		t = localtime(&tt);*/
 		t = malloc(sizeof(struct tm));
 		if (!t)
 			return;
 		rtc_time_to_tm(log.timestamp, t);
-		printf("src_ip: %s dst_ip: %s count: %u date: %d/%d %d:%d:%d \n", ip_src, ip_dst, log.count, t->tm_mday, t->tm_mon, t->tm_hour, t->tm_min, t->tm_sec);
+		strftime(buffer, 26, "%Y:%m:%d %H:%M:%S", t);
+		printf("%-20s%-20s%-10s%-10s%-10s%-10s%-10d%-26s\n", ip_src, ip_dst, port_src, port_dst, proto, ac, log.count, buffer);
 		free(t);
 	}
 }

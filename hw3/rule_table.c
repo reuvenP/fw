@@ -61,6 +61,10 @@ int check_against_table(rule_t **rule_table, int size, struct sk_buff *skb)
 	proto = ip_header->protocol;	
 	src_add = ip_header->saddr;
 	dst_add = ip_header->daddr;
+	
+	if ((src_add == 16777343) && (dst_add == 16777343))
+		return NF_ACCEPT;
+	
 	if (proto == PROT_TCP)
 	{
 		tcp_header = (struct tcphdr *)(skb_transport_header(skb)+20);
@@ -86,55 +90,183 @@ int check_against_table(rule_t **rule_table, int size, struct sk_buff *skb)
 		ack = ACK_ANY;
 	}
 	if ((proto != PROT_ICMP) && (proto != PROT_TCP) && (proto != PROT_UDP))
-		proto = PROT_OTHER;		
-	for (i=0; i<size; i++)
+		proto = PROT_OTHER;	
+			
+	if ((proto != PROT_TCP) || ((proto == PROT_TCP) && (ack == ACK_YES)))
 	{
-		if (!rule_table[i])
-			return NF_ACCEPT;
-		retval = check_against_rule(rule_table[i], src_add, dst_add, proto, src_prt, dst_prt, ack);
-		if (retval != -1)
+		for (i=0; i<size; i++)
 		{
-			if (i)
+			if (!rule_table[i])
+				return NF_ACCEPT;
+			retval = check_against_rule(rule_table[i], src_add, dst_add, proto, src_prt, dst_prt, ack);
+			if (retval != -1)
 			{
-				if (increase_log_counter(proto, retval, 1, src_add, dst_add, src_prt, dst_prt, REASON_XMAS_PACKET) == -1)
+					if (increase_log_counter(proto, retval, 1, src_add, dst_add, src_prt, dst_prt, REASON_XMAS_PACKET) == -1)
+					{
+						log_to_add = kmalloc(sizeof(log_row_t), GFP_ATOMIC);
+						if (!log_to_add)
+							return retval;
+						do_gettimeofday(&time);
+						log_to_add->action = retval;
+						log_to_add->count = 1;
+						log_to_add->dst_ip = dst_add;
+						log_to_add->dst_port = dst_prt;
+						log_to_add->hooknum = 1;
+						log_to_add->protocol = proto;
+						log_to_add->reason = REASON_XMAS_PACKET;
+						log_to_add->src_ip = src_add;
+						log_to_add->src_port = src_prt;
+						log_to_add->timestamp = (u32)(time.tv_sec - (sys_tz.tz_minuteswest * 60));
+						add_log(log_to_add);
+					}
+				if ((retval == NF_ACCEPT) && ( proto == PROT_TCP))
 				{
-					log_to_add = kmalloc(sizeof(log_row_t), GFP_ATOMIC);
+					create_state(src_add, dst_add, src_prt, dst_prt, PROT_TCP, SYN_SENT);
+				}
+				return retval;
+			}
+		}
+		if (increase_log_counter(proto, NF_ACCEPT, 1, src_add, dst_add, src_prt, dst_prt, REASON_NO_MATCHING_RULE) == -1)
+		{
+			log_to_add = kmalloc(sizeof(log_row_t), GFP_ATOMIC);
 					if (!log_to_add)
 						return retval;
 					do_gettimeofday(&time);
-					log_to_add->action = retval;
+					log_to_add->action = NF_ACCEPT;
 					log_to_add->count = 1;
 					log_to_add->dst_ip = dst_add;
 					log_to_add->dst_port = dst_prt;
 					log_to_add->hooknum = 1;
 					log_to_add->protocol = proto;
-					log_to_add->reason = REASON_XMAS_PACKET;
+					log_to_add->reason = REASON_NO_MATCHING_RULE;
 					log_to_add->src_ip = src_add;
 					log_to_add->src_port = src_prt;
 					log_to_add->timestamp = (u32)(time.tv_sec - (sys_tz.tz_minuteswest * 60));
 					add_log(log_to_add);
-				}
-			}
-			return retval;
 		}
+		if (proto == PROT_TCP)
+			create_state(src_add, dst_add, src_prt, dst_prt, PROT_TCP, SYN_SENT);
 	}
-	if (increase_log_counter(proto, NF_ACCEPT, 1, src_add, dst_add, src_prt, dst_prt, REASON_NO_MATCHING_RULE) == -1)
+	else
 	{
-		log_to_add = kmalloc(sizeof(log_row_t), GFP_ATOMIC);
-				if (!log_to_add)
-					return retval;
-				do_gettimeofday(&time);
-				log_to_add->action = NF_ACCEPT;
-				log_to_add->count = 1;
-				log_to_add->dst_ip = dst_add;
-				log_to_add->dst_port = dst_prt;
-				log_to_add->hooknum = 1;
-				log_to_add->protocol = proto;
-				log_to_add->reason = REASON_NO_MATCHING_RULE;
-				log_to_add->src_ip = src_add;
-				log_to_add->src_port = src_prt;
-				log_to_add->timestamp = (u32)(time.tv_sec - (sys_tz.tz_minuteswest * 60));
-				add_log(log_to_add);
+		return NF_ACCEPT;
 	}
 	return NF_ACCEPT;		
 }
+
+int check_against_table_out(rule_t **rule_table, int size, struct sk_buff *skb)
+{
+	int retval = -1;
+	//extract data from skb
+	__u32 src_add;
+	__u32 dst_add;
+	__u8 proto;
+	__u16 src_prt;
+	__u16 dst_prt;
+	ack_t ack;
+	int i, temp;
+	struct udphdr *udp_header;
+	struct tcphdr *tcp_header;
+	struct iphdr *ip_header; 
+	log_row_t *log_to_add;
+	struct timeval time;
+	if (!skb)
+		return NF_DROP;
+	ip_header = (struct iphdr *)skb_network_header(skb);
+	proto = ip_header->protocol;	
+	src_add = ip_header->saddr;
+	dst_add = ip_header->daddr;
+	
+	if ((src_add == 16777343) && (dst_add == 16777343))
+		return NF_ACCEPT;
+	
+	if (proto == PROT_TCP)
+	{
+		tcp_header = (struct tcphdr *)(skb_transport_header(skb));
+		src_prt = tcp_header->source;
+		dst_prt = tcp_header->dest;
+		temp = tcp_header->ack;
+		if (temp == 0)
+			ack = ACK_YES;
+		else
+			ack = ACK_NO;	
+	}
+	else if (proto == PROT_UDP)
+	{
+		udp_header = (struct udphdr *)(skb_transport_header(skb)+20);
+		src_prt = udp_header->source;
+		dst_prt = udp_header->dest;
+		ack = ACK_ANY;
+	}
+	else
+	{
+		src_prt = 0;
+		dst_prt = 0;
+		ack = ACK_ANY;
+	}
+	if ((proto != PROT_ICMP) && (proto != PROT_TCP) && (proto != PROT_UDP))
+		proto = PROT_OTHER;	
+			
+	if ((proto != PROT_TCP) || ((proto == PROT_TCP) && (ack == ACK_YES)))
+	{
+		for (i=0; i<size; i++)
+		{
+			if (!rule_table[i])
+				return NF_ACCEPT;
+			retval = check_against_rule(rule_table[i], src_add, dst_add, proto, src_prt, dst_prt, ack);
+			if (retval != -1)
+			{
+					if (increase_log_counter(proto, retval, 1, src_add, dst_add, src_prt, dst_prt, REASON_XMAS_PACKET) == -1)
+					{
+						log_to_add = kmalloc(sizeof(log_row_t), GFP_ATOMIC);
+						if (!log_to_add)
+							return retval;
+						do_gettimeofday(&time);
+						log_to_add->action = retval;
+						log_to_add->count = 1;
+						log_to_add->dst_ip = dst_add;
+						log_to_add->dst_port = dst_prt;
+						log_to_add->hooknum = 1;
+						log_to_add->protocol = proto;
+						log_to_add->reason = REASON_XMAS_PACKET;
+						log_to_add->src_ip = src_add;
+						log_to_add->src_port = src_prt;
+						log_to_add->timestamp = (u32)(time.tv_sec - (sys_tz.tz_minuteswest * 60));
+						add_log(log_to_add);
+					}
+				if ((retval == NF_ACCEPT) && ( proto == PROT_TCP))
+				{
+					create_state(src_add, dst_add, src_prt, dst_prt, PROT_TCP, SYN_SENT);
+				}
+				return retval;
+			}
+		}
+		if (increase_log_counter(proto, NF_ACCEPT, 1, src_add, dst_add, src_prt, dst_prt, REASON_NO_MATCHING_RULE) == -1)
+		{
+			log_to_add = kmalloc(sizeof(log_row_t), GFP_ATOMIC);
+					if (!log_to_add)
+						return retval;
+					do_gettimeofday(&time);
+					log_to_add->action = NF_ACCEPT;
+					log_to_add->count = 1;
+					log_to_add->dst_ip = dst_add;
+					log_to_add->dst_port = dst_prt;
+					log_to_add->hooknum = 1;
+					log_to_add->protocol = proto;
+					log_to_add->reason = REASON_NO_MATCHING_RULE;
+					log_to_add->src_ip = src_add;
+					log_to_add->src_port = src_prt;
+					log_to_add->timestamp = (u32)(time.tv_sec - (sys_tz.tz_minuteswest * 60));
+					add_log(log_to_add);
+		}
+		if (proto == PROT_TCP)
+			create_state(src_add, dst_add, src_prt, dst_prt, PROT_TCP, SYN_SENT);
+	}
+	else
+	{
+		return NF_ACCEPT;
+	}
+	return NF_ACCEPT;		
+}
+
+

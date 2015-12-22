@@ -22,7 +22,7 @@ void clear_states(void)
 	state_s *cur, *tmp;
 	list_for_each_entry_safe(cur, tmp, &state_list_head.list, list)
 	{
-		printk(KERN_INFO "deleting state no %d\n", cur->state);
+		printk(KERN_INFO "deleting state src_ip: %u dst_ip: %u\n", cur->src_ip, cur->dst_ip);
 		list_del(&cur->list);	
 		kfree(cur);
 	}

@@ -149,7 +149,7 @@ int check_against_table(rule_t **rule_table, int size, struct sk_buff *skb)
 	}
 	else
 	{
-		return NF_ACCEPT;
+		return check_against_conn_table(src_add, dst_add, src_prt, dst_prt, proto, tcp_header);
 	}
 	return NF_ACCEPT;		
 }
@@ -193,7 +193,7 @@ int check_against_table_out(rule_t **rule_table, int size, struct sk_buff *skb)
 	}
 	else if (proto == PROT_UDP)
 	{
-		udp_header = (struct udphdr *)(skb_transport_header(skb)+20);
+		udp_header = (struct udphdr *)(skb_transport_header(skb));
 		src_prt = udp_header->source;
 		dst_prt = udp_header->dest;
 		ack = ACK_ANY;
@@ -264,7 +264,7 @@ int check_against_table_out(rule_t **rule_table, int size, struct sk_buff *skb)
 	}
 	else
 	{
-		return NF_ACCEPT;
+		return check_against_conn_table(src_add, dst_add, src_prt, dst_prt, proto, tcp_header);
 	}
 	return NF_ACCEPT;		
 }

@@ -143,7 +143,7 @@ void print_logs(FILE *file)
 		if (!t)
 			return;
 		rtc_time_to_tm(log.timestamp, t);
-		strftime(buffer, 26, "%Y:%m:%d %H:%M:%S", t);
+		strftime(buffer, 26, "%d/%m/%Y %H:%M:%S", t);
 		printf("%-20s%-20s%-10s%-10s%-10s%-10s%-10d%-26s\n", ip_src, ip_dst, port_src, port_dst, proto, ac, log.count, buffer);
 		free(t);
 	}

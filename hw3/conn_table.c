@@ -54,3 +54,8 @@ state_s *get_state(__be32 src_ip, __be32 dst_ip, __be16 src_port, __be16 dst_por
 	}
 	return NULL;
 }
+
+int check_against_conn_table(__be32 src_ip, __be32 dst_ip, __be16 src_port, __be16 dst_port, unsigned int protocol, struct tcphdr *tcp_header)
+{
+	return NF_ACCEPT;
+}

@@ -149,7 +149,26 @@ int check_against_table(rule_t **rule_table, int size, struct sk_buff *skb)
 	}
 	else
 	{
-		return check_against_conn_table(src_add, dst_add, src_prt, dst_prt, proto, tcp_header);
+		retval = check_against_conn_table(src_add, dst_add, src_prt, dst_prt, proto, tcp_header);
+		if (increase_log_counter(proto, retval, 1, src_add, dst_add, src_prt, dst_prt, REASON_XMAS_PACKET) == -1)
+					{
+						log_to_add = kmalloc(sizeof(log_row_t), GFP_ATOMIC);
+						if (!log_to_add)
+							return retval;
+						do_gettimeofday(&time);
+						log_to_add->action = retval;
+						log_to_add->count = 1;
+						log_to_add->dst_ip = dst_add;
+						log_to_add->dst_port = dst_prt;
+						log_to_add->hooknum = 1;
+						log_to_add->protocol = proto;
+						log_to_add->reason = REASON_XMAS_PACKET;
+						log_to_add->src_ip = src_add;
+						log_to_add->src_port = src_prt;
+						log_to_add->timestamp = (u32)(time.tv_sec - (sys_tz.tz_minuteswest * 60));
+						add_log(log_to_add);
+					}
+		return retval;
 	}
 	return NF_ACCEPT;		
 }
@@ -264,7 +283,26 @@ int check_against_table_out(rule_t **rule_table, int size, struct sk_buff *skb)
 	}
 	else
 	{
-		return check_against_conn_table(src_add, dst_add, src_prt, dst_prt, proto, tcp_header);
+		retval = check_against_conn_table(src_add, dst_add, src_prt, dst_prt, proto, tcp_header);
+		if (increase_log_counter(proto, retval, 1, src_add, dst_add, src_prt, dst_prt, REASON_XMAS_PACKET) == -1)
+					{
+						log_to_add = kmalloc(sizeof(log_row_t), GFP_ATOMIC);
+						if (!log_to_add)
+							return retval;
+						do_gettimeofday(&time);
+						log_to_add->action = retval;
+						log_to_add->count = 1;
+						log_to_add->dst_ip = dst_add;
+						log_to_add->dst_port = dst_prt;
+						log_to_add->hooknum = 1;
+						log_to_add->protocol = proto;
+						log_to_add->reason = REASON_XMAS_PACKET;
+						log_to_add->src_ip = src_add;
+						log_to_add->src_port = src_prt;
+						log_to_add->timestamp = (u32)(time.tv_sec - (sys_tz.tz_minuteswest * 60));
+						add_log(log_to_add);
+					}
+		return retval;			
 	}
 	return NF_ACCEPT;		
 }

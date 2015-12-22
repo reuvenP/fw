@@ -15,6 +15,7 @@ typedef enum {
 	FIN_WAIT_2		= 9,
 	CLOSING			= 10,
 	TIME_WAIT_S		= 11,
+	SYN_ACK_SENT 	= 12,
 } state_t;
 	
 

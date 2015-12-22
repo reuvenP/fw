@@ -57,5 +57,81 @@ state_s *get_state(__be32 src_ip, __be32 dst_ip, __be16 src_port, __be16 dst_por
 
 int check_against_conn_table(__be32 src_ip, __be32 dst_ip, __be16 src_port, __be16 dst_port, unsigned int protocol, struct tcphdr *tcp_header)
 {
-	return NF_ACCEPT;
+	int syn, ack, fin, rst;
+	state_s *s = get_state(src_ip, dst_ip, src_port, dst_port, protocol);
+	if (!tcp_header)
+		return NF_DROP;
+	if (!s)
+		s = get_state(dst_ip, src_ip, dst_port, src_port, protocol);
+	if (!s)
+		return NF_DROP;
+	ack = tcp_header->ack;
+	syn = tcp_header->syn;
+	fin = tcp_header->fin;
+	rst = tcp_header->rst;
+	
+	if (rst)
+	{
+		list_del(&s->list);
+		return NF_ACCEPT;
+	}
+	
+	if (s->state == SYN_SENT)
+	{
+		printk(KERN_INFO "in SYN_SENT state\n");
+		if ((ack == 1) && (syn == 1))
+		{
+			s->state = SYN_ACK_SENT;
+			return NF_ACCEPT;
+		}
+		return NF_DROP;
+	}
+	else if (s->state == SYN_ACK_SENT)
+	{
+		printk(KERN_INFO "in SYN_ACK_SENT state\n");
+		if ((ack == 1) && (syn == 0))
+		{
+			s->state = ESTABLISHED;
+			return NF_ACCEPT;
+		}
+		return NF_DROP;
+	}
+	else if (s->state == ESTABLISHED)
+	{
+		printk(KERN_INFO "in ESTABLISHED state\n");
+		if ((ack == 1) && (fin == 0))
+		{
+			return NF_ACCEPT;
+		}
+		else if ((ack == 1) && (fin == 1))
+		{
+			s->state = FIN_WAIT_1;
+			return NF_ACCEPT;
+		}
+		else
+			return NF_DROP;
+	}
+	else if (s->state == FIN_WAIT_1)
+	{
+		printk(KERN_INFO "in FIN_WAIT_1 state\n");
+		if ((ack == 1) && (fin == 1))
+		{
+			s->state = FIN_WAIT_2;
+			return NF_ACCEPT;
+		}
+		return NF_DROP;
+	}
+	else if (s->state == FIN_WAIT_2)
+	{
+		printk(KERN_INFO "in FIN_WAIT_2 state\n");
+		if ((ack == 1) && (fin == 0))
+		{
+			list_del(&s->list);
+			return NF_ACCEPT;
+		}
+		return NF_DROP;
+	}
+	
+	
+	return NF_DROP;
 }

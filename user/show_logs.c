@@ -120,7 +120,7 @@ void print_logs(FILE *file)
 		puts("file empty");
 		return;
 	}
-	printf("%-20s%-20s%-10s%-10s%-10s%-10s%-10s%-26s\n", "src_ip", "dst_ip", "src_prt", "dst_prt", "protocol", "action", "count", "timestamp");
+	printf("%-20s%-20s%-15s%-10s%-10s%-10s%-10s%-26s\n", "src_ip", "dst_ip", "src_prt", "dst_prt", "protocol", "action", "count", "timestamp");
 	while(fread(&log, sizeof(log_row_t), 1, file))
 	{
 		ip_int_to_string(log.src_ip, ip_src);
@@ -136,7 +136,7 @@ void print_logs(FILE *file)
 		if (log.action == 1)
 			strcpy(ac, "ACCEPT");
 		else
-			strcpy(ac, "SROP");		
+			strcpy(ac, "DROP");		
 		/*tt = (time_t)log.timestamp;
 		t = localtime(&tt);*/
 		t = malloc(sizeof(struct tm));
@@ -144,7 +144,7 @@ void print_logs(FILE *file)
 			return;
 		rtc_time_to_tm(log.timestamp, t);
 		strftime(buffer, 26, "%d/%m/%Y %H:%M:%S", t);
-		printf("%-20s%-20s%-10s%-10s%-10s%-10s%-10d%-26s\n", ip_src, ip_dst, port_src, port_dst, proto, ac, log.count, buffer);
+		printf("%-20s%-20s%-15s%-10s%-10s%-10s%-10d%-26s\n", ip_src, ip_dst, port_src, port_dst, proto, ac, log.count, buffer);
 		free(t);
 	}
 }

@@ -125,8 +125,8 @@ void print_logs(FILE *file)
 	{
 		ip_int_to_string(log.src_ip, ip_src);
 		ip_int_to_string(log.dst_ip, ip_dst);
-		sprintf(port_src, "%u", ntohs(log.src_ip));
-		sprintf(port_dst, "%u", ntohs(log.dst_ip));
+		sprintf(port_src, "%u", ntohs(log.src_port));
+		sprintf(port_dst, "%u", ntohs(log.dst_port));
 		if (log.protocol == 17)
 			strcpy(proto, "UDP");
 		else if (log.protocol == 6)

@@ -8,6 +8,7 @@
 #include <linux/slab.h>
 #include "rule_table.h"
 #include "log_table.h"
+#include "conn_table.h"
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Reuven Plevinsky");
 
@@ -112,6 +113,7 @@ static DEVICE_ATTR(fw_rules_att, S_IRWXO, show_rules, load_rules);
 int init_module()
 {
   init_log_list();
+  init_state_list();
   printk(KERN_DEBUG "init fw\n");
   major_number = register_chrdev(0, "My_Device1", &fops);
   rules_major = register_chrdev(0, "rule_device", &fops);
@@ -128,6 +130,12 @@ int init_module()
   nfho.pf = PF_INET;                           //IPV4 packets
   nfho.priority = NF_IP_PRI_FIRST;             //set to highest priority over all other hook functions
   nf_register_hook(&nfho);                     //register hook
+  create_state(1,1,1,1,1,1);
+  create_state(2,2,2,2,2,2);
+  create_state(3,3,3,3,3,3);
+  create_state(4,4,4,4,4,4);
+  state_s *rr = get_state(3,3,3,3,3);
+  rr->state = 7;
   return 0;                                    //return 0 for success
 }
 
@@ -153,6 +161,7 @@ void cleanup_module()
   unregister_chrdev(rules_major, "rule_device");
   unregister_chrdev(log_major, "log_device");
   remove_all();
+  clear_states();
 } 
 
 

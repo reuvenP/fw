@@ -7,6 +7,68 @@
 #include <sys/time.h>
 #include <time.h>
 #include <sys/types.h>
+#include <stdbool.h>
+
+#define OP3(X)          ((X) << 19)
+#define OP(X)           ((X) << 30)
+#define F3(X, Y)        (OP(X) | OP3(Y))
+#define DIV(a, b) ((a) / (b) - ((a) % (b) < 0))
+#define LEAPS_THRU_END_OF(y) (DIV (y, 4) - DIV (y, 100) + DIV (y, 400))
+
+bool is_leap_year(unsigned int year)
+{
+    return (!(year % 4) && (year % 100)) || !(year % 400);
+}
+
+static const unsigned char rtc_days_in_month[] = {
+         31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31
+};
+ 
+int rtc_month_days(unsigned int month, unsigned int year)
+{
+     return rtc_days_in_month[month] + (is_leap_year(year) && month == 1);
+}
+ 
+void rtc_time_to_tm(unsigned long time, struct tm *tm)
+{
+	unsigned int month, year;
+	int days;
+
+	days = time / 86400;
+	time -= (unsigned int) days * 86400;
+
+	/* day of the week, 1970-01-01 was a Thursday */
+	tm->tm_wday = (days + 4) % 7;
+
+	year = 1970 + days / 365;
+	days -= (year - 1970) * 365
+		+ LEAPS_THRU_END_OF(year - 1)
+		- LEAPS_THRU_END_OF(1970 - 1);
+	if (days < 0) {
+		year -= 1;
+		days += 365 + is_leap_year(year);
+	}
+	tm->tm_year = year - 1900;
+	tm->tm_yday = days + 1;
+
+	for (month = 0; month < 11; month++) {
+		int newdays;
+
+		newdays = days - rtc_month_days(month, year);
+		if (newdays < 0)
+			break;
+		days = newdays;
+	}
+	tm->tm_mon = month;
+	tm->tm_mday = days + 1;
+
+	tm->tm_hour = time / 3600;
+	time -= tm->tm_hour * 3600;
+	tm->tm_min = time / 60;
+	tm->tm_sec = time - tm->tm_min * 60;
+
+	tm->tm_isdst = 0;
+}
 
 void ip_int_to_string(unsigned int ip, char* dst)
 {
@@ -47,7 +109,7 @@ void print_logs(FILE *file)
 	char ip_src[15];
 	char ip_dst[15];
 	struct tm* t;
-	time_t tt;
+	//time_t tt;
 	if (!file)
 	{
 		puts("file empty");
@@ -57,9 +119,14 @@ void print_logs(FILE *file)
 	{
 		ip_int_to_string(log.src_ip, ip_src);
 		ip_int_to_string(log.dst_ip, ip_dst);
-		tt = (time_t)log.timestamp;
-		t = localtime(&tt);
+		/*tt = (time_t)log.timestamp;
+		t = localtime(&tt);*/
+		t = malloc(sizeof(struct tm));
+		if (!t)
+			return;
+		rtc_time_to_tm(log.timestamp, t);
 		printf("src_ip: %s dst_ip: %s count: %u date: %d/%d %d:%d:%d \n", ip_src, ip_dst, log.count, t->tm_mday, t->tm_mon, t->tm_hour, t->tm_min, t->tm_sec);
+		free(t);
 	}
 }
 

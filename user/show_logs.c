@@ -4,6 +4,9 @@
 #include <string.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
+#include <sys/time.h>
+#include <time.h>
+#include <sys/types.h>
 
 void ip_int_to_string(unsigned int ip, char* dst)
 {
@@ -43,6 +46,8 @@ void print_logs(FILE *file)
 	log_row_t log;
 	char ip_src[15];
 	char ip_dst[15];
+	struct tm* t;
+	time_t tt;
 	if (!file)
 	{
 		puts("file empty");
@@ -52,7 +57,9 @@ void print_logs(FILE *file)
 	{
 		ip_int_to_string(log.src_ip, ip_src);
 		ip_int_to_string(log.dst_ip, ip_dst);
-		printf("src_ip: %s dst_ip: %s count: %u\n", ip_src, ip_dst, log.count);
+		tt = (time_t)log.timestamp;
+		t = localtime(&tt);
+		printf("src_ip: %s dst_ip: %s count: %u date: %d/%d %d:%d:%d \n", ip_src, ip_dst, log.count, t->tm_mday, t->tm_mon, t->tm_hour, t->tm_min, t->tm_sec);
 	}
 }
 

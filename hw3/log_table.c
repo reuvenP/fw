@@ -1,5 +1,10 @@
 #include "log_table.h"
 
+static log_row_t log_list_head;
+static int actual_log_size;
+static int log_size;
+static char *log_buf;
+
 void init_log_list(void)
 {
 	actual_log_size = 0;
@@ -15,15 +20,6 @@ int add_log(log_row_t *log)
     return 0;
 }
 
-void test()
-{
-	log_row_t *rr;
-	list_for_each_entry(rr, &log_list_head.list, list)
-	{
-		printk(KERN_INFO "src_ip: %u dst_ip: %u src_prt: %u dst_prt: %u action: %u protocol: %u reason: %u count: %u time: %u\n", rr->src_ip, rr->dst_ip, rr->src_port, rr->dst_port, rr->action, rr->protocol, rr->reason, rr->count, rr->timestamp);
-	}
-}
-
 void remove_all()
 {
 	log_row_t *cur, *tmp;
@@ -37,6 +33,7 @@ void remove_all()
 int increase_log_counter(unsigned char protocol, unsigned char action, unsigned char hooknum, __be32 src_ip, __be32 dst_ip, __be16 src_port, __be16 dst_port, reason_t reason)
 {
 	log_row_t *cur, *tmp;
+	struct timeval time;
 	list_for_each_entry_safe(cur, tmp, &log_list_head.list, list)
 	{
 		if ((cur->protocol == protocol) && (cur->action == action) && (cur->hooknum == hooknum) && 
@@ -44,7 +41,8 @@ int increase_log_counter(unsigned char protocol, unsigned char action, unsigned 
 			(cur->dst_port == dst_port) && (cur->reason == reason))
 			{
 				cur->count++;
-				cur->timestamp = jiffies;
+				do_gettimeofday(&time);
+				cur->timestamp = (u32)(time.tv_sec - (sys_tz.tz_minuteswest * 60));
 				return 0;
 			}
 	}
@@ -70,7 +68,6 @@ int log_open(struct inode *node, struct file *f)
 		i++;	
 	}
 	log_buf[log_size*sizeof(log_row_t)]='\0';
-	printk(KERN_INFO "%s\n", log_buf);
 	return 0;
 }
 

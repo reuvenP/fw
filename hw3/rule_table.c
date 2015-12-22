@@ -54,6 +54,7 @@ int check_against_table(rule_t **rule_table, int size, struct sk_buff *skb)
 	struct tcphdr *tcp_header;
 	struct iphdr *ip_header; 
 	log_row_t *log_to_add;
+	struct timeval time;
 	if (!skb)
 		return NF_DROP;
 	ip_header = (struct iphdr *)skb_network_header(skb);
@@ -93,31 +94,36 @@ int check_against_table(rule_t **rule_table, int size, struct sk_buff *skb)
 		retval = check_against_rule(rule_table[i], src_add, dst_add, proto, src_prt, dst_prt, ack);
 		if (retval != -1)
 		{
-			if (increase_log_counter(proto, retval, 1, src_add, dst_add, src_prt, dst_prt, REASON_XMAS_PACKET) == -1)
+			if (i)
 			{
-				log_to_add = kmalloc(sizeof(log_row_t), GFP_ATOMIC);
-				if (!log_to_add)
-					return retval;
-				log_to_add->action = retval;
-				log_to_add->count = 1;
-				log_to_add->dst_ip = dst_add;
-				log_to_add->dst_port = dst_prt;
-				log_to_add->hooknum = 1;
-				log_to_add->protocol = proto;
-				log_to_add->reason = REASON_XMAS_PACKET;
-				log_to_add->src_ip = src_add;
-				log_to_add->src_port = src_prt;
-				log_to_add->timestamp = jiffies;
-				add_log(log_to_add);
+				if (increase_log_counter(proto, retval, 1, src_add, dst_add, src_prt, dst_prt, REASON_XMAS_PACKET) == -1)
+				{
+					log_to_add = kmalloc(sizeof(log_row_t), GFP_ATOMIC);
+					if (!log_to_add)
+						return retval;
+					do_gettimeofday(&time);
+					log_to_add->action = retval;
+					log_to_add->count = 1;
+					log_to_add->dst_ip = dst_add;
+					log_to_add->dst_port = dst_prt;
+					log_to_add->hooknum = 1;
+					log_to_add->protocol = proto;
+					log_to_add->reason = REASON_XMAS_PACKET;
+					log_to_add->src_ip = src_add;
+					log_to_add->src_port = src_prt;
+					log_to_add->timestamp = (u32)(time.tv_sec - (sys_tz.tz_minuteswest * 60));
+					add_log(log_to_add);
+				}
 			}
 			return retval;
 		}
-	}	
+	}
 	if (increase_log_counter(proto, NF_ACCEPT, 1, src_add, dst_add, src_prt, dst_prt, REASON_NO_MATCHING_RULE) == -1)
 	{
 		log_to_add = kmalloc(sizeof(log_row_t), GFP_ATOMIC);
 				if (!log_to_add)
 					return retval;
+				do_gettimeofday(&time);
 				log_to_add->action = NF_ACCEPT;
 				log_to_add->count = 1;
 				log_to_add->dst_ip = dst_add;
@@ -127,7 +133,7 @@ int check_against_table(rule_t **rule_table, int size, struct sk_buff *skb)
 				log_to_add->reason = REASON_NO_MATCHING_RULE;
 				log_to_add->src_ip = src_add;
 				log_to_add->src_port = src_prt;
-				log_to_add->timestamp = jiffies;
+				log_to_add->timestamp = (u32)(time.tv_sec - (sys_tz.tz_minuteswest * 60));
 				add_log(log_to_add);
 	}
 	return NF_ACCEPT;		

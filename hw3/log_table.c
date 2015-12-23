@@ -45,6 +45,15 @@ int increase_log_counter(unsigned char protocol, unsigned char action, unsigned 
 				cur->timestamp = (u32)(time.tv_sec - (sys_tz.tz_minuteswest * 60));
 				return 0;
 			}
+		else if ((cur->protocol == protocol) && (cur->action == action) && (cur->hooknum == hooknum) && 
+			(cur->src_ip == dst_ip) && (cur->dst_ip == src_ip) && (cur->src_port == dst_port) &&
+			(cur->dst_port == src_port) && (cur->reason == reason))
+			{
+				cur->count++;
+				do_gettimeofday(&time);
+				cur->timestamp = (u32)(time.tv_sec - (sys_tz.tz_minuteswest * 60));
+				return 0;
+			}	
 	}
 	return -1;
 }

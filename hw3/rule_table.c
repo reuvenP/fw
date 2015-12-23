@@ -121,6 +121,7 @@ int check_against_table(rule_t **rule_table, int size, struct sk_buff *skb)
 					}
 				if ((retval == NF_ACCEPT) && ( proto == PROT_TCP))
 				{
+					clear_timeouted_states();
 					create_state(src_add, dst_add, src_prt, dst_prt, PROT_TCP, SYN_SENT);
 				}
 				return retval;
@@ -145,7 +146,10 @@ int check_against_table(rule_t **rule_table, int size, struct sk_buff *skb)
 					add_log(log_to_add);
 		}
 		if (proto == PROT_TCP)
+		{
+			clear_timeouted_states();
 			create_state(src_add, dst_add, src_prt, dst_prt, PROT_TCP, SYN_SENT);
+		}
 	}
 	else
 	{
@@ -255,6 +259,7 @@ int check_against_table_out(rule_t **rule_table, int size, struct sk_buff *skb)
 					}
 				if ((retval == NF_ACCEPT) && ( proto == PROT_TCP))
 				{
+					clear_timeouted_states();
 					create_state(src_add, dst_add, src_prt, dst_prt, PROT_TCP, SYN_SENT);
 				}
 				return retval;
@@ -279,7 +284,10 @@ int check_against_table_out(rule_t **rule_table, int size, struct sk_buff *skb)
 					add_log(log_to_add);
 		}
 		if (proto == PROT_TCP)
+		{
+			clear_timeouted_states();
 			create_state(src_add, dst_add, src_prt, dst_prt, PROT_TCP, SYN_SENT);
+		}
 	}
 	else
 	{

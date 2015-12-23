@@ -12,6 +12,7 @@
 #include <linux/udp.h>
 #include <linux/list.h>
 #include <linux/time.h>
+#include <linux/jiffies.h>
 
 
 // the protocols we will work with

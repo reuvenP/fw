@@ -20,13 +20,14 @@ typedef enum {
 	
 
 typedef struct {
-	__be32   		src_ip;
-	__be32			dst_ip;
-	__be16 			src_port;
-	__be16 			dst_port;
-	unsigned int	protocol;
-	state_t 		state;
-	struct list_head list;
+	__be32   			src_ip;
+	__be32				dst_ip;
+	__be16 				src_port;
+	__be16 				dst_port;
+	unsigned int		protocol;
+	state_t 			state;
+	unsigned long		jif_time_out;
+	struct list_head 	list;
 } state_s;
 
 void init_state_list(void);
@@ -35,6 +36,7 @@ void clear_states(void);
 int create_state(__be32 src_ip, __be32 dst_ip, __be16 src_port, __be16 dst_port, unsigned int protocol, state_t state);
 state_s *get_state(__be32 src_ip, __be32 dst_ip, __be16 src_port, __be16 dst_port, unsigned int protocol);
 int check_against_conn_table(__be32 src_ip, __be32 dst_ip, __be16 src_port, __be16 dst_port, unsigned int protocol, struct tcphdr *tcp_header);
+void clear_timeouted_states(void);
 	
 
 

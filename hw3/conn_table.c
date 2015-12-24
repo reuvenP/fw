@@ -74,7 +74,7 @@ int check_against_conn_table(__be32 src_ip, __be32 dst_ip, __be16 src_port, __be
 	if (rst)
 	{
 		list_del(&s->list);
-		return NF_ACCEPT;
+		return NF_QUEUE;
 	}
 	
 	if (s->state == SYN_SENT)
@@ -88,7 +88,7 @@ int check_against_conn_table(__be32 src_ip, __be32 dst_ip, __be16 src_port, __be
 		if ((ack == 1) && (syn == 1))
 		{
 			s->state = SYN_ACK_SENT;
-			return NF_ACCEPT;
+			return NF_QUEUE;
 		}
 		return NF_DROP;
 	}
@@ -104,7 +104,7 @@ int check_against_conn_table(__be32 src_ip, __be32 dst_ip, __be16 src_port, __be
 		{
 			s->state = ESTABLISHED;
 			s->jif_time_out = jiffies + HZ*25;
-			return NF_ACCEPT;
+			return NF_QUEUE;
 		}
 		return NF_DROP;
 	}
@@ -119,13 +119,13 @@ int check_against_conn_table(__be32 src_ip, __be32 dst_ip, __be16 src_port, __be
 		if ((ack == 1) && (fin == 0))
 		{
 			s->jif_time_out = jiffies + HZ*25;
-			return NF_ACCEPT;
+			return NF_QUEUE;
 		}
 		else if ((ack == 1) && (fin == 1))
 		{
 			s->state = FIN_WAIT_1;
 			s->jif_time_out = jiffies + HZ*25;
-			return NF_ACCEPT;
+			return NF_QUEUE;
 		}
 		else
 			return NF_DROP;
@@ -141,12 +141,12 @@ int check_against_conn_table(__be32 src_ip, __be32 dst_ip, __be16 src_port, __be
 		if ((ack == 1) && (fin == 1))
 		{
 			s->state = FIN_WAIT_2;
-			return NF_ACCEPT;
+			return NF_QUEUE;
 		}
 		else if((ack == 1) && (fin == 0))
 		{
 			s->state = CLOSING;
-			return NF_ACCEPT;
+			return NF_QUEUE;
 		}
 		return NF_DROP;
 	}
@@ -161,7 +161,7 @@ int check_against_conn_table(__be32 src_ip, __be32 dst_ip, __be16 src_port, __be
 		if ((ack == 1) && (fin == 0))
 		{
 			list_del(&s->list);
-			return NF_ACCEPT;
+			return NF_QUEUE;
 		}
 		return NF_DROP;
 	}
@@ -176,7 +176,7 @@ int check_against_conn_table(__be32 src_ip, __be32 dst_ip, __be16 src_port, __be
 		if ((ack == 1) && (fin == 1))
 		{
 			s->state = FIN_WAIT_2;
-			return NF_ACCEPT;
+			return NF_QUEUE;
 		}
 		return NF_DROP;
 	}

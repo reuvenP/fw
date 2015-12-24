@@ -123,6 +123,7 @@ int check_against_table(rule_t **rule_table, int size, struct sk_buff *skb)
 				{
 					clear_timeouted_states();
 					create_state(src_add, dst_add, src_prt, dst_prt, PROT_TCP, SYN_SENT);
+					return NF_QUEUE;
 				}
 				return retval;
 			}
@@ -149,6 +150,7 @@ int check_against_table(rule_t **rule_table, int size, struct sk_buff *skb)
 		{
 			clear_timeouted_states();
 			create_state(src_add, dst_add, src_prt, dst_prt, PROT_TCP, SYN_SENT);
+			return NF_QUEUE;
 		}
 	}
 	else
@@ -261,6 +263,7 @@ int check_against_table_out(rule_t **rule_table, int size, struct sk_buff *skb)
 				{
 					clear_timeouted_states();
 					create_state(src_add, dst_add, src_prt, dst_prt, PROT_TCP, SYN_SENT);
+					return NF_QUEUE;
 				}
 				return retval;
 			}
@@ -287,6 +290,7 @@ int check_against_table_out(rule_t **rule_table, int size, struct sk_buff *skb)
 		{
 			clear_timeouted_states();
 			create_state(src_add, dst_add, src_prt, dst_prt, PROT_TCP, SYN_SENT);
+			return NF_QUEUE;
 		}
 	}
 	else

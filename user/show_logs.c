@@ -133,9 +133,9 @@ void print_logs(FILE *file)
 			strcpy(proto, "TCP");
 		else
 			sprintf(proto, "%d", log.protocol);
-		if (log.action == 1)
+		if ((log.action == 1) || (log.action == 3))
 			strcpy(ac, "ACCEPT");
-		else
+		else if (log.action == 2)
 			strcpy(ac, "DROP");		
 		/*tt = (time_t)log.timestamp;
 		t = localtime(&tt);*/

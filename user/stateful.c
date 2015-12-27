@@ -6,9 +6,44 @@
 #include <linux/netfilter.h>            /* for NF_ACCEPT */
 
 #include <libnetfilter_queue/libnetfilter_queue.h>
+#include "http.h"
 
+static u_int32_t get_id(struct nfq_data *tb)
+{
+	int id = 0;
+	struct nfqnl_msg_packet_hdr *ph;
+	ph = nfq_get_msg_packet_hdr(tb);
+        if (ph) 
+           id = ntohl(ph->packet_id);
+     return id;      
+}
+static u_int32_t inspect (struct nfq_data *tb)
+{
+	unsigned char *data;
+	int ports[4];
+	int ip_offset, tcp_offset, data_offset, ret, src_port, dst_port;
+	ret = nfq_get_payload(tb, &data);
+        if (ret >= 0)
+        {
+			ip_offset = (data[0] & 15)*4;
+			tcp_offset = (data[ip_offset + 12] >> 4)*4;
+			data_offset = ip_offset + tcp_offset;
+			ports[0] = data[ip_offset];
+			ports[1] = data[ip_offset+1];
+			ports[2] = data[ip_offset+2];
+			ports[3] = data[ip_offset+3];
+			src_port = ports[0]*256 + ports[1];
+			dst_port = ports[2]*256 + ports[3];
+			printf("src_port: %d dst_port: %d\n", src_port, dst_port);
+			if (ret >= data_offset)
+			{
+				return inspect_http(data+data_offset, ret-data_offset);
+			}
+		}
+        return NF_ACCEPT;
+}
 /* returns packet id */
-static u_int32_t print_pkt (struct nfq_data *tb)
+/*static u_int32_t print_pkt (struct nfq_data *tb)
 {
         int id = 0;
         struct nfqnl_msg_packet_hdr *ph;
@@ -101,15 +136,17 @@ static u_int32_t print_pkt (struct nfq_data *tb)
         
 
         return id;
-}
+}*/
         
 
 static int cb(struct nfq_q_handle *qh, struct nfgenmsg *nfmsg,
               struct nfq_data *nfa, void *data)
 {
-        u_int32_t id = print_pkt(nfa);
+	int id = get_id(nfa);
+		int ret = inspect(nfa);
+        //u_int32_t id = print_pkt(nfa);
         //printf("entering callback\n");
-        return nfq_set_verdict(qh, id, NF_ACCEPT, 0, NULL);
+        return nfq_set_verdict(qh, id, ret, 0, NULL);
 }
 
 int main(int argc, char **argv)

@@ -1,5 +1,19 @@
 #include "http.h"
 
+int search_str(unsigned char* buffer, char* str)
+{
+	int buf_len, str_len, i, j, offset;
+	buf_len = strlen(buffer);
+	str_len = strlen(str);
+	for (i = 0, j = 0; i < buf_len; i++)
+	{
+		if (buffer[i] == str[j])
+		{
+			
+		}
+	}
+}
+
 int inspect_http(unsigned char* buffer, int len)
 {
 	int i, j;	

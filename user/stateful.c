@@ -34,10 +34,10 @@ static u_int32_t inspect (struct nfq_data *tb)
 			ports[3] = data[ip_offset+3];
 			src_port = ports[0]*256 + ports[1];
 			dst_port = ports[2]*256 + ports[3];
-			printf("src_port: %d dst_port: %d\n", src_port, dst_port);
 			if (ret >= data_offset)
 			{
-				return inspect_http(data+data_offset, ret-data_offset);
+				if ((src_port == 80) || (src_port == 8080) || (src_port == 443) || (dst_port == 80) || (dst_port == 8080) || (dst_port == 443))
+					return inspect_http(data+data_offset, ret-data_offset);
 			}
 		}
         return NF_ACCEPT;

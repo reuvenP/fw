@@ -14,53 +14,91 @@ static u_int32_t print_pkt (struct nfq_data *tb)
         struct nfqnl_msg_packet_hdr *ph;
         struct nfqnl_msg_packet_hw *hwph;
         u_int32_t mark,ifi; 
-        int ret;
+        int ret, i, j;
         unsigned char *data;
-
+		int ip_offset, tcp_offset, data_offset;
         ph = nfq_get_msg_packet_hdr(tb);
         if (ph) {
                 id = ntohl(ph->packet_id);
-                printf("hw_protocol=0x%04x hook=%u id=%u ",
-                        ntohs(ph->hw_protocol), ph->hook, id);
+                //printf("hw_protocol=0x%04x hook=%u id=%u ", ntohs(ph->hw_protocol), ph->hook, id);
         }
 
         hwph = nfq_get_packet_hw(tb);
         if (hwph) {
                 int i, hlen = ntohs(hwph->hw_addrlen);
 
-                printf("hw_src_addr=");
+                //printf("hw_src_addr=");
                 for (i = 0; i < hlen-1; i++)
-                        printf("%02x:", hwph->hw_addr[i]);
-                printf("%02x ", hwph->hw_addr[hlen-1]);
+                {
+                        //printf("%02x:", hwph->hw_addr[i]);
+					}
+                //printf("%02x ", hwph->hw_addr[hlen-1]);
         }
 
         mark = nfq_get_nfmark(tb);
         if (mark)
-                printf("mark=%u ", mark);
+        {
+                //printf("mark=%u ", mark);
+			}
 
         ifi = nfq_get_indev(tb);
         if (ifi)
-                printf("indev=%u ", ifi);
+        {
+                //printf("indev=%u ", ifi);
+			}
 
         ifi = nfq_get_outdev(tb);
         if (ifi)
-                printf("outdev=%u ", ifi);
+        {
+                //printf("outdev=%u ", ifi);
+			}
         ifi = nfq_get_physindev(tb);
         if (ifi)
-                printf("physindev=%u ", ifi);
+        {
+                //printf("physindev=%u ", ifi);
+			}
 
         ifi = nfq_get_physoutdev(tb);
         if (ifi)
-                printf("physoutdev=%u ", ifi);
+        {
+                //printf("physoutdev=%u ", ifi);
+			}
 
         ret = nfq_get_payload(tb, &data);
         if (ret >= 0)
         {
-                printf("payload_len=%d \n", ret);
-                puts(data);
+			ip_offset = (data[0] & 15)*4;
+			tcp_offset = (data[ip_offset + 12] >> 4)*4;
+			data_offset = ip_offset + tcp_offset;
+			//printf("ip_off: %d data offset: %d data offset: %d\n",ip_offset, tcp_offset, data_offset);
+			//printf("payload_len=%d \n", ret);
+			if (ret >= data_offset)
+			{
+				for (i = data_offset, j = -1; i < ret; i++) 
+				{
+					if (j == 7)
+					{
+						printf("%s", " ");
+						j++;
+					}
+					else if (j == 15)
+					{
+						printf("%s", "\n");
+						j = 0;
+					}
+					else
+						j++;
+					if (data[i] < 16)
+						printf("0%x ", data[i]);
+					else	
+						printf("%x ", data[i]);	
+					//printf("%c", data[i]);
+				}
+				fputc('\n', stdout);
 			}
+		}
 
-        fputc('\n', stdout);
+        
 
         return id;
 }
@@ -70,7 +108,7 @@ static int cb(struct nfq_q_handle *qh, struct nfgenmsg *nfmsg,
               struct nfq_data *nfa, void *data)
 {
         u_int32_t id = print_pkt(nfa);
-        printf("entering callback\n");
+        //printf("entering callback\n");
         return nfq_set_verdict(qh, id, NF_ACCEPT, 0, NULL);
 }
 
@@ -118,7 +156,7 @@ int main(int argc, char **argv)
         fd = nfq_fd(h);
 
         while ((rv = recv(fd, buf, sizeof(buf), 0)) && rv >= 0) {
-                printf("pkt received\n");
+                //printf("pkt received\n");
                 nfq_handle_packet(h, buf, rv);
         }
 

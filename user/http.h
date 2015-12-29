@@ -7,6 +7,7 @@
 #include <netinet/in.h>
 #include <linux/types.h>
 #include <linux/netfilter.h>
+#include <string.h>
 
 #include <libnetfilter_queue/libnetfilter_queue.h>
 

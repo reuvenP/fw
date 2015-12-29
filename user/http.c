@@ -39,9 +39,16 @@ int search_str(unsigned char* buffer, char* str)
 
 int inspect_http(unsigned char* buffer, int len)
 {
-	int i, j;	
+	int i, j, ret;
+	char* st = "Host: webcourse.cs.technion.ac.il";	
 	if (!buffer)
 		return NF_DROP;
+	ret = search_str(buffer, st);
+	if (ret == -1)
+		return NF_ACCEPT;
+	else
+	{
+		printf("matched at offset %d. droped\n", ret);	
 	for (i = 0, j = -1; i < len; i++) 
 			{
 				if (j == 7)
@@ -61,6 +68,10 @@ int inspect_http(unsigned char* buffer, int len)
 				else	
 					printf("%x ", buffer[i]);	
 			}
-			fputc('\n', stdout);	
+			fputc('\n', stdout);
+			
+			return NF_DROP;
+		}
+				
 	return NF_ACCEPT;	
 }

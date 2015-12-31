@@ -43,7 +43,7 @@ static u_int32_t inspect (struct nfq_data *tb)
         return NF_ACCEPT;
 }
 /* returns packet id */
-/*static u_int32_t print_pkt (struct nfq_data *tb)
+static u_int32_t print_pkt (struct nfq_data *tb)
 {
         int id = 0;
         struct nfqnl_msg_packet_hdr *ph;
@@ -136,17 +136,17 @@ static u_int32_t inspect (struct nfq_data *tb)
         
 
         return id;
-}*/
+}
         
 
 static int cb(struct nfq_q_handle *qh, struct nfgenmsg *nfmsg,
               struct nfq_data *nfa, void *data)
 {
-	int id = get_id(nfa);
-		int ret = inspect(nfa);
-        //u_int32_t id = print_pkt(nfa);
+	/*int id = get_id(nfa);
+		int ret = inspect(nfa);*/
+        u_int32_t id = print_pkt(nfa);
         //printf("entering callback\n");
-        return nfq_set_verdict(qh, id, ret, 0, NULL);
+        return nfq_set_verdict(qh, id, NF_ACCEPT, 0, NULL);
 }
 
 int main(int argc, char **argv)

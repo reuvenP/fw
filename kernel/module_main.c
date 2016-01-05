@@ -12,6 +12,7 @@
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Reuven Plevinsky");
 
+
 static struct nf_hook_ops nfho;         //struct holding set of hook function options
 static struct nf_hook_ops nfho_out;         //struct holding set of hook function options
 static int major_number;

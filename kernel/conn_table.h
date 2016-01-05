@@ -35,7 +35,7 @@ int add_state(state_s *state);
 void clear_states(void);
 int create_state(__be32 src_ip, __be32 dst_ip, __be16 src_port, __be16 dst_port, unsigned int protocol, state_t state);
 state_s *get_state(__be32 src_ip, __be32 dst_ip, __be16 src_port, __be16 dst_port, unsigned int protocol);
-int check_against_conn_table(__be32 src_ip, __be32 dst_ip, __be16 src_port, __be16 dst_port, unsigned int protocol, struct tcphdr *tcp_header);
+int check_against_conn_table(__be32 src_ip, __be32 dst_ip, __be16 src_port, __be16 dst_port, unsigned int protocol, struct tcphdr *tcp_header, char* data, int data_len);
 void clear_timeouted_states(void);
 	
 

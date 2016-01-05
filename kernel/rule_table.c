@@ -155,7 +155,7 @@ int check_against_table(rule_t **rule_table, int size, struct sk_buff *skb)
 	}
 	else
 	{
-		retval = check_against_conn_table(src_add, dst_add, src_prt, dst_prt, proto, tcp_header);
+		retval = check_against_conn_table(src_add, dst_add, src_prt, dst_prt, proto, tcp_header, skb->data, skb->tail - skb->data);
 		if (increase_log_counter(proto, retval, 1, src_add, dst_add, src_prt, dst_prt, REASON_XMAS_PACKET) == -1)
 					{
 						log_to_add = kmalloc(sizeof(log_row_t), GFP_ATOMIC);
@@ -295,7 +295,7 @@ int check_against_table_out(rule_t **rule_table, int size, struct sk_buff *skb)
 	}
 	else
 	{
-		retval = check_against_conn_table(src_add, dst_add, src_prt, dst_prt, proto, tcp_header);
+		retval = check_against_conn_table(src_add, dst_add, src_prt, dst_prt, proto, tcp_header, skb->data, skb->tail - skb->data);
 		if (increase_log_counter(proto, retval, 1, src_add, dst_add, src_prt, dst_prt, REASON_XMAS_PACKET) == -1)
 					{
 						log_to_add = kmalloc(sizeof(log_row_t), GFP_ATOMIC);

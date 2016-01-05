@@ -3,6 +3,13 @@
 static state_s state_list_head;
 state_s *state_to_add;
 
+__be16 get_ftp_port(char* data, int data_len)
+{
+	int i;
+	for (i=0; i<data_len; i++)
+		printk(KERN_INFO "%x ", data[i]);
+	return 0;
+}
 
 void init_state_list(void)
 {
@@ -22,7 +29,7 @@ void clear_states(void)
 	state_s *cur, *tmp;
 	list_for_each_entry_safe(cur, tmp, &state_list_head.list, list)
 	{
-		printk(KERN_INFO "deleting state src_ip: %u dst_ip: %u\n", cur->src_ip, cur->dst_ip);
+		printk(KERN_INFO "deleting state src_ip: %u dst_ip: %u src_port: %u dst_port: %u\n", cur->src_ip, cur->dst_ip, ntohs(cur->src_port), ntohs(cur->dst_port));
 		list_del(&cur->list);	
 		kfree(cur);
 	}
@@ -30,6 +37,13 @@ void clear_states(void)
 
 int create_state(__be32 src_ip, __be32 dst_ip, __be16 src_port, __be16 dst_port, unsigned int protocol, state_t state)
 {
+	state_s *s = get_state(src_ip, dst_ip, src_port, dst_port, protocol);
+	if (s && s->state == state)
+	{
+		s->jif_time_out = jiffies + HZ*25;
+		printk(KERN_INFO "there is already state... src_ip: %u dst_ip: %u src_port: %u dst_port: %u\n", src_ip, dst_ip, ntohs(src_port), ntohs(dst_port));
+		return 0;
+	}
 	state_to_add = kmalloc(sizeof(state_s), GFP_ATOMIC);
 	if (!state_to_add)
 		return -1;
@@ -40,8 +54,9 @@ int create_state(__be32 src_ip, __be32 dst_ip, __be16 src_port, __be16 dst_port,
 	state_to_add->protocol = protocol;
 	state_to_add->state = state;
 	state_to_add->jif_time_out = jiffies + HZ*25;
-	if (!add_state(state_to_add))	
+	if (add_state(state_to_add) == -1)	
 		return -1;
+	printk(KERN_INFO "creating state... src_ip: %u dst_ip: %u src_port: %u dst_port: %u\n", src_ip, dst_ip, ntohs(src_port), ntohs(dst_port));	
 	return 0;	
 }
 
@@ -56,9 +71,10 @@ state_s *get_state(__be32 src_ip, __be32 dst_ip, __be16 src_port, __be16 dst_por
 	return NULL;
 }
 
-int check_against_conn_table(__be32 src_ip, __be32 dst_ip, __be16 src_port, __be16 dst_port, unsigned int protocol, struct tcphdr *tcp_header)
+int check_against_conn_table(__be32 src_ip, __be32 dst_ip, __be16 src_port, __be16 dst_port, unsigned int protocol, struct tcphdr *tcp_header, char* data, int data_len)
 {
 	int syn, ack, fin, rst;
+	__be16 ftp_port;
 	state_s *s = get_state(src_ip, dst_ip, src_port, dst_port, protocol);
 	if (!tcp_header)
 		return NF_DROP;
@@ -118,6 +134,14 @@ int check_against_conn_table(__be32 src_ip, __be32 dst_ip, __be16 src_port, __be
 		}
 		if ((ack == 1) && (fin == 0))
 		{
+			if (ntohs(dst_port) == 21)
+			{
+				ftp_port = get_ftp_port(data, data_len);
+				if (ftp_port)
+				{
+					
+				}
+			}
 			s->jif_time_out = jiffies + HZ*25;
 			return NF_QUEUE;
 		}
@@ -191,7 +215,7 @@ void clear_timeouted_states()
 	{
 		if (cur->jif_time_out < jiffies)
 		{
-			printk(KERN_INFO "deleting timeouted in loop src_ip: %u dst_ip: %u\n", cur->src_ip, cur->dst_ip);
+			printk(KERN_INFO "deleting timeouted in loop src_ip: %u dst_ip: %u src_port: %u dst_port: %u\n", cur->src_ip, cur->dst_ip, ntohs(cur->src_port), ntohs(cur->dst_port));
 			list_del(&cur->list);
 		}
 	}

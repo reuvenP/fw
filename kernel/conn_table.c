@@ -3,13 +3,13 @@
 static state_s state_list_head;
 state_s *state_to_add;
 
-__be16 get_ftp_port(char* data, int data_len)
+/*__be16 get_ftp_port(char* data, int data_len)
 {
 	int i;
 	for (i=0; i<data_len; i++)
 		printk(KERN_INFO "%x ", data[i]);
 	return 0;
-}
+}*/
 
 void init_state_list(void)
 {
@@ -74,7 +74,7 @@ state_s *get_state(__be32 src_ip, __be32 dst_ip, __be16 src_port, __be16 dst_por
 int check_against_conn_table(__be32 src_ip, __be32 dst_ip, __be16 src_port, __be16 dst_port, unsigned int protocol, struct tcphdr *tcp_header, char* data, int data_len)
 {
 	int syn, ack, fin, rst;
-	__be16 ftp_port;
+	//__be16 ftp_port;
 	state_s *s = get_state(src_ip, dst_ip, src_port, dst_port, protocol);
 	if (!tcp_header)
 		return NF_DROP;
@@ -134,14 +134,14 @@ int check_against_conn_table(__be32 src_ip, __be32 dst_ip, __be16 src_port, __be
 		}
 		if ((ack == 1) && (fin == 0))
 		{
-			if (ntohs(dst_port) == 21)
+			/*if (ntohs(dst_port) == 21)
 			{
 				ftp_port = get_ftp_port(data, data_len);
 				if (ftp_port)
 				{
 					
 				}
-			}
+			}*/
 			s->jif_time_out = jiffies + HZ*25;
 			return NF_QUEUE;
 		}
